@@ -23,7 +23,7 @@
         try {
             var gameState = JSON.parse(event.data);
 
-            document.getElementById("label").innerHTML = gameState.timeStamp;
+            document.getElementById("label").innerHTML = gameState.timestamp;
 
             var clientResponse = JSON.stringify({
                 clientName: "JS_Client",

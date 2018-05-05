@@ -60,7 +60,7 @@ public class HelloWorldClientStandalone
      */
     public static ClientResponse handleUpdate(GameState gameState)
     {
-        System.out.println("[" + gameState.serverName + "]: " + gameState.timeStamp);
+        System.out.println("[" + gameState.serverName + "]: " + gameState.timestamp);
 
         ClientResponse response = new ClientResponse();
         response.clientName = "Java_Client_Standalone";
@@ -76,7 +76,7 @@ public class HelloWorldClientStandalone
     private static class GameState
     {
         private String serverName;
-        private String timeStamp;
+        private String timestamp;
     }
 
     /**

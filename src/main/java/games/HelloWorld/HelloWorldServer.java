@@ -24,7 +24,7 @@ import java.util.List;
  *
  * @author Niklas Johansen
  */
-public class HelloWorld
+public class HelloWorldServer
 {
     public static void main(String[] args)
     {
@@ -36,20 +36,15 @@ public class HelloWorld
         {
             GameState gameState = new GameState();
             gameState.serverName = "GameServer";
-            gameState.timeStamp = new Date(System.currentTimeMillis()).toString();
+            gameState.timestamp = new Date().toString();
             server.broadcast(gameState);
 
-            List<Player> players = server.getPlayers();
-
-            if(players.size() > 0)
+            System.out.println();
+            for(Player player : server.getPlayers())
             {
-                System.out.println("\n------------ PLAYER RESPONSES ------------");
-                for(Player p : players)
-                {
-                    ClientResponse response = (ClientResponse) p.getPlayerData();
-                    if(response != null)
-                        System.out.println("[" + response.clientName + "]: " + response.message);
-                }
+                ClientResponse response = (ClientResponse) player.getPlayerData();
+                if(response != null)
+                    System.out.println("[" + response.clientName + "]: " + response.message);
             }
         });
         server.start();
@@ -71,6 +66,6 @@ public class HelloWorld
     public static class GameState
     {
         public String serverName;
-        public String timeStamp;
+        public String timestamp;
     }
 }

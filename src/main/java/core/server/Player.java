@@ -52,7 +52,7 @@ public class Player
     /**
      * Sends a message to the client.
      *
-     * @param msg a messahe string
+     * @param msg a message string
      */
     public void send(String msg)
     {

@@ -10,6 +10,14 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.function.Consumer;
 
+/**
+ * A client for easy interaction with {@link core.server.GameServer}.
+ * Provides methods for sending and receiving JSON-formatted data to and from the server.
+ * The client opens a TCP connection with the given IP and port. When new updates are received,
+ * a callback will be triggered to notify the bot.
+ *
+ * @author Niklas Johansen
+ */
 public class GameClient
 {
     private final int port;
@@ -26,7 +34,14 @@ public class GameClient
         this.port = port;
     }
 
-    public <T> void setOnServerUpdate(Class<T> className, Consumer<T> serverUpdateEvent)
+    /**
+     * Opens a connection to the server and triggers the callback when new messages arrives.
+     *
+     * @param className the class to parse the JSON message form the server into
+     * @param updateCallback the callback to be triggered on new incoming updates
+     * @param <T> the class type for the received JSON object
+     */
+    public <T> void setOnServerUpdate(Class<T> className, Consumer<T> updateCallback)
     {
         clientThread = new Thread(() ->
         {
@@ -42,7 +57,7 @@ public class GameClient
                     if(input.startsWith("{"))
                     {
                         T gameState = DataParser.parseFromJSON(input, className);
-                        serverUpdateEvent.accept(gameState);
+                        updateCallback.accept(gameState);
                     }
                     else System.out.println("[Server]: " + input);
                 }
@@ -56,6 +71,9 @@ public class GameClient
         clientThread.start();
     }
 
+    /**
+     * Disconnects the client gracefully.
+     */
     public void disconnect()
     {
         if(clientThread != null && clientThread.isAlive())
@@ -73,13 +91,23 @@ public class GameClient
         }
     }
 
-    public <T> void send(T data)
+    /**
+     * Parses an object to a JSON-formatted string and sends it to the client.
+
+     * @param obj a POJO.
+     */
+    public void send(Object obj)
     {
-        printWriter.println(DataParser.parseToJSON(data));
+        printWriter.println(DataParser.parseToJSON(obj));
     }
 
-    public void send(String data)
+    /**
+     * Sends a message to the server.
+     *
+     * @param msg a message string
+     */
+    public void send(String msg)
     {
-        printWriter.println(data);
+        printWriter.println(msg);
     }
 }
