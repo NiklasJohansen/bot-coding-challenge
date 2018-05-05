@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript Client</title>
+</head>
+<body>
+    <h1>JavaScript Client</h1>
+    <label id="label"></label>
+</body>
+<script>
+
+    /*
+    This example code connects to the server through a web socket.
+    On every new incoming message the "onmessage" function is called.
+    The label is updated with the received data and a response object is
+    crafted and sent back as a JSON-formatted string. The object format
+    has to match what the server expects (include all the right fields) in
+    order for the server to receive the data properly.
+    */
+
+    var connection = new WebSocket('ws://127.0.0.1:55501');
+    connection.onmessage = function(event) {
+        try {
+            var gameState = JSON.parse(event.data);
+
+            document.getElementById("label").innerHTML = gameState.timeStamp;
+
+            var clientResponse = JSON.stringify({
+                clientName: "JS_Client",
+                message: "Hello " + gameState.serverName + "!"
+            });
+
+            connection.send(clientResponse);
+        }
+        catch (error) {
+            document.getElementById("label").innerHTML = event.data;
+        }
+    }
+</script>
+</html>
+
