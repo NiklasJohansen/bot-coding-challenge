@@ -16,7 +16,6 @@ public class Controller
     public void initialize()
     {
         this.gameBoard = new GameBoard(canvas);
-
         openServer();
         startGameLoop();
         addEventListeners();
@@ -70,8 +69,5 @@ public class Controller
             }
 
         });
-
-
     }
-
 }

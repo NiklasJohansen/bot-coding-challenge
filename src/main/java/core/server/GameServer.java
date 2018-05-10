@@ -101,7 +101,7 @@ public class GameServer<P extends Player>
                 {
                     players.add(player);
                 }
-                
+
                 if(newPlayerConnectionEvent != null)
                     newPlayerConnectionEvent.accept(player);
             }
