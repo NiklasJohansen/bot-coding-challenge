@@ -1,7 +1,9 @@
 package core.server;
 
+import core.server.connection.Connection;
 import core.server.connection.ConnectionHandler;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,75 +13,97 @@ import java.util.function.Consumer;
  * A server for easy interaction with connected {@link Player players}.
  * Opens a listener on the specified port and adds new player connections
  * to a local list. Events to be triggered when players connect and disconnect
- * can be set through provided methods.
+ * can be set through provided methods. The class also provides functionality
+ * for timed updates through the setGameLoop method.
  *
- * This class also provides functionality for timed updates through the
- * setGameLoop method.
+ * The server is made generic to enable different player implementation in
+ * different games.
  *
+ * @param <P> the player implementation class
  * @author Niklas Johansen
  */
-public class GameServer
+public class GameServer<P extends Player>
 {
     private Thread gameLoopThread;
-    private Class clientResponseClass;
     private ConnectionHandler connectionHandler;
 
-    private Consumer<Player> newPlayerConnectionEvent;
-    private Consumer<Player> playerDisconnectEvent;
-    private List<Player> players;
+    private Class<P> playerClass;
+    private List<P> players;
+    private Consumer<P> newPlayerConnectionEvent;
+    private Consumer<P> playerDisconnectEvent;
 
-    private boolean enableNewConnections;
+    private boolean allowNewConnections;
     private boolean reverseBroadcast;
+    private boolean removePlayerOnDisconnect;
 
     /**
-     * @param port the port used by the connection listener
+     * NOTE: in order for the server to create objects of the player implementation class,
+     * only a default constructor without parameters can be used.
+     *
+     * @param playerClass the player implementation class
      */
-    public GameServer(int port)
+    public GameServer(Class<P> playerClass)
     {
-        this.connectionHandler = new ConnectionHandler(port);
+        for(Constructor<?> c : playerClass.getConstructors())
+            if(c.getParameterCount() > 0)
+                throw new IllegalArgumentException("The player class constructor cannot take parameters!");
+
+        this.playerClass = playerClass;
         this.players = Collections.synchronizedList(new ArrayList<>());
-        this.enableNewConnections = true;
+        this.allowNewConnections = true;
+        this.removePlayerOnDisconnect = true;
     }
 
     /**
-     * Starts up the game server by starting the connection listener and
-     * the game loop (if set).
+     * Starts up the game server by starting the connection listener and the game loop (if set).
      *
+     * @param port the port used by the connection listener
      * @throws IllegalStateException if the client response class is not set
      */
-    public void start()
+    public void start(int port)
     {
-        if(clientResponseClass == null)
-            throw new IllegalStateException("Client response class not set");
+        connectionHandler = new ConnectionHandler(port);
+        connectionHandler.setOnNewConnection(this::handleNewConnection);
+        connectionHandler.start();
 
         if(gameLoopThread != null)
             gameLoopThread.start();
+    }
 
-        connectionHandler.setOnNewConnection(conn ->
+    /**
+     * Creates a new player object with the supplied connection and adds it to the player list.
+     * The connection will be closed immediately if new connection is not allowed.
+     *
+     * @param connection the connection to be handled
+     */
+    private void handleNewConnection(Connection connection)
+    {
+        try
         {
-            Player player = new Player(conn, clientResponseClass);
-
-            if(enableNewConnections)
+            if(allowNewConnections)
             {
-                players.add(player);
+                P player = playerClass.newInstance();
+                player.addConnection(connection);
                 player.setOnDisconnect(() ->
                 {
-                    players.remove(player);
+                    if(removePlayerOnDisconnect)
+                        players.remove(player);
+
                     if(playerDisconnectEvent != null)
                         playerDisconnectEvent.accept(player);
                 });
 
+                players.add(player);
+
                 if(newPlayerConnectionEvent != null)
                     newPlayerConnectionEvent.accept(player);
             }
-            else
-            {
-                player.send("Server is closed for new connections!");
-                player.disconnect();
-            }
-        });
-
-        connectionHandler.start();
+            else connection.close();
+        }
+        catch (InstantiationException | IllegalAccessException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -125,29 +149,31 @@ public class GameServer
     /**
      * @return the list of all connected players
      */
-    public List<Player> getPlayers()
+    public List<P> getPlayers()
     {
         return players;
     }
 
     /**
-     * Enables new players to connect. Enabled by default.
+     * Allows new players to connect.
+     * Default value is true.
      *
-     * @param state the state indicating whether new players are allowed to connect
+     * @param state the state indicating whether new players are allowed to connect or not
      */
-    public void enableNewConnections(boolean state)
+    public void allowNewConnections(boolean state)
     {
-        this.enableNewConnections = state;
+        this.allowNewConnections = state;
     }
 
     /**
-     * Sets the class type to be used when parsing the JSON-formatted packets from the players.
+     * Sets whether a player should be removed from the player-list when it disconnects.
+     * Default value is true.
      *
-     * @param clientResponseClass the class type matching the JSON formatted player-response
+     * @param state the state indicating whether players should be removed or not
      */
-    public void setClientResponseClass(Class clientResponseClass)
+    public void setRemovePlayerOnDisconnect(boolean state)
     {
-        this.clientResponseClass = clientResponseClass;
+        this.removePlayerOnDisconnect = state;
     }
 
     /**
@@ -155,7 +181,7 @@ public class GameServer
      *
      * @param event the event to be triggered, returns the new player.
      */
-    public void setOnNewPlayerConnection(Consumer<Player> event)
+    public void setOnNewPlayerConnection(Consumer<P> event)
     {
         this.newPlayerConnectionEvent = event;
     }
@@ -165,7 +191,7 @@ public class GameServer
      *
      * @param event the event to be triggered, returns the the disconnected player.
      */
-    public void setOnPlayerDisconnect(Consumer<Player> event)
+    public void setOnPlayerDisconnect(Consumer<P> event)
     {
         this.playerDisconnectEvent = event;
     }

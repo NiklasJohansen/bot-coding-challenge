@@ -108,4 +108,13 @@ public class SocketConnection implements Connection
     {
         return address;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isConnected()
+    {
+        return socket.isConnected() && !socket.isClosed();
+    }
 }

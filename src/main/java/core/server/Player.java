@@ -5,21 +5,32 @@ import core.server.connection.Connection;
 import core.utils.DataParser;
 
 /**
- *  Handles the interaction with a connected client.
- *  Provides methods for sending and retrieving JSON formatted data.
+ * Handles the interaction with a connected client.
+ * Provides methods for sending and retrieving JSON formatted data.
  *
+ * @param <T> the class containing the data fields expected to be sent from the clients
  * @author Niklas Johansen
  */
-public class Player
+public abstract class Player<T>
 {
     private Connection connection;
-    private Object playerResponse;
+    private Class<T> clientResponseClass;
+    private T response;
 
     /**
-     * @param connection an open client connection
      * @param clientResponseClass the class in which received JSON-packets should be parsed to
      */
-    public Player(Connection connection, Class clientResponseClass)
+    public Player(Class<T> clientResponseClass)
+    {
+        this.clientResponseClass = clientResponseClass;
+    }
+
+    /**
+     * Adds the connection to the player and sets the event to trigger when a new message is received.
+     *
+     * @param connection an open client connection
+     */
+    void addConnection(Connection connection)
     {
         this.connection = connection;
         this.connection.setOnMessage(msg ->
@@ -28,7 +39,7 @@ public class Player
             {
                 try
                 {
-                    this.playerResponse = DataParser.parseFromJSON(msg, clientResponseClass);
+                    this.response = DataParser.parseFromJSON(msg, clientResponseClass);
                 }
                 catch (JsonSyntaxException | NumberFormatException e)
                 {
@@ -60,14 +71,14 @@ public class Player
     }
 
     /**
-     * Returns the players data object if the connected client has sent a JSON-formatted packet
-     * matching the specified response class. It will otherwise return null.
+     * Returns the response object sent from the client.
+     * The object is null if no response has been received.
      *
      * @return an object of the class type specified in the constructor
      */
-    public Object getPlayerData()
+    public T getResponse()
     {
-        return playerResponse;
+        return response;
     }
 
     /**
@@ -76,6 +87,14 @@ public class Player
     public String getIpAddress()
     {
         return connection.getAddress();
+    }
+
+    /**
+     * @return true if the connection to the player is open
+     */
+    public boolean isConnected()
+    {
+        return connection.isConnected();
     }
 
     /**

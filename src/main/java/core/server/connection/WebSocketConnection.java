@@ -83,4 +83,13 @@ public class WebSocketConnection implements Connection
     {
         return address;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean isConnected()
+    {
+        return webSocket.isOpen();
+    }
 }

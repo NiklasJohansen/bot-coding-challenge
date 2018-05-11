@@ -29,7 +29,7 @@ To make this fun, gather your coding friends and let the game run on a big scree
 presented with a chosen game from the library and given time to code their bot. When the participants 
 are done coding and ready for battle, they all connect to the game from their own computer. This 
 eliminates the hassle of trying to compile each and everyone's program to run on your poor machine. 
-The bots run on the machines they where coded on and everyone is happy!
+The bots run on the machines they were coded on and everyone is happy!
 
 ### Contribute
 If you have fun ideas to new or existing games and want to contribute to the project, please feel free to 
