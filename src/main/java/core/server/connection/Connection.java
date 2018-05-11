@@ -43,4 +43,11 @@ public interface Connection
      * @return the IP-address of the connected client
      */
     String getAddress();
+
+    /**
+     * @return the state of the connection
+     */
+    boolean isConnected();
 }
+
+

@@ -4,15 +4,14 @@ import core.server.GameServer;
 import core.server.Player;
 
 import java.util.Date;
-import java.util.List;
 
 /**
  * This is an example class showing the steps necessary in setting up a {@link GameServer}.
  *
  * These steps are required for the server to run:
- * - Create a new GameServer instance on a given port
- * - Define the ClientResponse class in which JSON-formatted packets from the player will be parsed to
- * - Start the server (should be done last, as starting the server will initiate some of the optional steps)
+ * - Create a player implementation and specify a ClientResponse class
+ * - Create a new GameServer instance
+ * - Start the server on a given port (should be done last, as starting the server will initiate some of the optional steps)
  *
  * Optional steps:
  * - Define what should happen when a new player connects
@@ -28,10 +27,14 @@ public class HelloWorldServer
 {
     public static void main(String[] args)
     {
-        GameServer server = new GameServer(55500);
-        server.setClientResponseClass(ClientResponse.class);
-        server.setOnNewPlayerConnection(player -> System.out.println(player.getIpAddress() + " connected!"));
-        server.setOnPlayerDisconnect(player -> System.out.println(player.getIpAddress() + " disconnected!"));
+        GameServer<HelloWorldPlayer> server = new GameServer<>(HelloWorldPlayer.class);
+
+        server.setOnNewPlayerConnection(player ->
+                System.out.println(player.getIpAddress() + " connected!"));
+
+        server.setOnPlayerDisconnect(player ->
+                System.out.println(player.getIpAddress() + " disconnected!"));
+
         server.setGameLoop(1, () ->
         {
             GameState gameState = new GameState();
@@ -40,14 +43,28 @@ public class HelloWorldServer
             server.broadcast(gameState);
 
             System.out.println();
-            for(Player player : server.getPlayers())
+            for(HelloWorldPlayer player : server.getPlayers())
             {
-                ClientResponse response = (ClientResponse) player.getPlayerData();
+                ClientResponse response = player.getResponse();
                 if(response != null)
                     System.out.println("[" + response.clientName + "]: " + response.message);
             }
         });
-        server.start();
+
+        server.start(55500);
+    }
+
+    /**
+     * This class is an implementation of the Player used by the GameServer.
+     */
+    public static class HelloWorldPlayer extends Player<ClientResponse>
+    {
+        // other player data //
+
+        public HelloWorldPlayer()
+        {
+            super(ClientResponse.class);
+        }
     }
 
     /**
@@ -60,7 +77,7 @@ public class HelloWorldServer
     }
 
     /**
-     * This class should contain game relevant data.
+     * This class contains game relevant data.
      * The content will be parsed to JSON and broadcast to all connected players.
      */
     public static class GameState

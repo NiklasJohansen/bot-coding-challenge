@@ -4,18 +4,31 @@ This project shows the small amount of code you have to write in order to get
 communication going between the server and its clients.
 
  ## Server
- Setting up a simple server requires few lines of code. Firstly a GameServer object 
- will have to be instantiated and given a port number. Then a response class 
- is defined. This class will contain the data fields expected to be sent from the clients.
- Lastly the server can be started.
+ Setting up a simple server requires few lines of code. Firstly a GameServer object will have to 
+ be instantiated. The server is responsible for handling interaction with all connected players.
  
 ``` java
- GameServer server = new GameServer(55500);
- server.setClientResponseClass(ClientResponse.class);
- server.start();
+GameServer<PlayerImpl> server = new GameServer(PlayerImpl.class);
 ```
- 
-The ClientResponse class for this example looks like this:
+
+The server is made generic to allow for different player implementations in different games.
+An implementation of the player class, like the one shown below, is specified in the 
+instantiation 
+of the GameServer.
+
+``` java
+public class PlayerImpl extends Player<ClientResponse>
+{
+    public PlayerImpl()
+    {
+        super(ClientResponse.class);
+    }
+}
+```
+
+The player implementation have to extend the Player class, and supply a ClientResponse class
+to the super constructor. This response class defines what data is expected to be sent from the clients,
+and is in this example defined as follows.
  
 ``` java
 public class ClientResponse 
@@ -25,9 +38,9 @@ public class ClientResponse
 }
 ```
  
-The server will now accept new connections and receive responses from its connected 
+A server set up like this will accept new connections and be able to receive responses from its connected 
 clients. But we have to define some behaviour in order for any communication to be going back 
-and forth between the connected players and the server.
+and forth.
 
 ``` java
 server.setGameLoop(1, () ->
@@ -42,10 +55,8 @@ server.setGameLoop(1, () ->
 
 The GameServer has built in game loop functionality. The above code loops every second and 
 broadcasts a GameState object to all players. What data the GameState object should contain will
-depend on each game and what is relevant for the players to know. In this example the 
-servers name and a timestamp is used. In a real game this could be a map, information about other
-players, game entities, etc. NOTE that starting the server will start the game loop to, so this 
-should be set before calling the servers start method.
+depend on the game implementing it. In this example the servers name and a timestamp is used. In a 
+real game this could be a map, information about other players, game entities, etc.
 
 ``` java
 public class GameState
@@ -56,13 +67,13 @@ public class GameState
 ```
 
 When a player has received the game state and responded with the defined ClientResponse object,
-that objects data can be accessed like shown below. A players data will be
-null if no response has been received.
+that objects data can be accessed like shown below. The getResponse method will return null if
+no response has been received.
 
 ``` java
-for(Player player : server.getPlayers())
+for(PlayerImpl player : server.getPlayers())
 {
-    ClientResponse response = (ClientResponse) player.getPlayerData();
+    ClientResponse response = player.getResponse();
     if(response != null)
         System.out.println("[" + response.clientName + "]: " + response.message);
 }
@@ -74,13 +85,19 @@ for(Player player : server.getPlayers())
 ``` java
 server.setOnNewPlayerConnection(player -> 
 {
-    // ...
+    // ... //
 });
 
 server.setOnPlayerDisconnect(player -> 
 {
-    // ...
+    // ... //
 });
+```
+
+The last and final step is simply to start the server on a given port number.
+
+``` java
+server.start(55500);
 ```
 
  ## Client
