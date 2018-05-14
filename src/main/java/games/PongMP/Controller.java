@@ -9,24 +9,36 @@ public class Controller
 {
     @FXML
     private Canvas canvas;
-    private GameServer server;
-    private GameState gameState;
+    private GameServer<PongPlayer> server;
     private GameBoard gameBoard;
 
     @FXML
     public void initialize()
     {
-        this.gameBoard = new GameBoard();
+        this.gameBoard = new GameBoard(canvas);
 
         openServer();
         startGameLoop();
+        addEventListeners();
     }
 
     private void openServer()
     {
-        this.server = new GameServer(55500);
-        this.server.setClientResponseClass(ClientResponse.class);
-        this.server.start();
+        this.server = new GameServer<>(PongPlayer.class);
+        this.server.setGameLoop(15, () ->
+        {
+            GameState gameState = gameBoard.getGameState();
+
+            server.getPlayers().forEach(pongPlayer ->
+            {
+                gameState.paddlePos = pongPlayer.getPaddlePos();
+                gameState.playerPaddle = pongPlayer.getPaddle();
+                gameState.playerDefenseLine = pongPlayer.getDefenseLine();
+                pongPlayer.send(gameState);
+                pongPlayer.update();
+            });
+        });
+        this.server.start(55500);
     }
 
     private void startGameLoop()
@@ -43,20 +55,23 @@ public class Controller
 
     private void updateGame()
     {
+        gameBoard.update(server.getPlayers());
         gameBoard.render(server.getPlayers(), canvas);
     }
 
-    public static class ClientResponse
+    private void addEventListeners()
     {
-        public boolean moveRight;
-        public boolean moveLeft;
+        canvas.setOnMouseMoved(event ->
+        {
+            for(Ball b : gameBoard.getGameState().balls)
+            {
+              //  b.xPosBall = event.getX();
+              //  b.yPosBall = event.getY();
+            }
+
+        });
+
+
     }
 
-    public static class GameState
-    {
-        public double xPosBall;
-        public double yPosBall;
-        public double xVelBall;
-        public double yVelBall;
-    }
 }
