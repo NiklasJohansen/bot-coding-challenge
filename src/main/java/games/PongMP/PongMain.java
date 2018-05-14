@@ -12,7 +12,7 @@ public class PongMain extends Application
     public void start(Stage primaryStage) throws Exception
     {
         AnchorPane root = FXMLLoader.load(getClass().getResource("/PongMP/userinterface.fxml"));
-        primaryStage.setTitle("Hello World");
+        primaryStage.setTitle("PongMP");
         primaryStage.setScene(new Scene(root, root.getPrefWidth(), root.getPrefHeight()));
         primaryStage.show();
     }
