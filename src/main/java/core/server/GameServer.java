@@ -27,8 +27,8 @@ public class GameServer<P extends Player>
     private Thread gameLoopThread;
     private ConnectionHandler connectionHandler;
 
-    private Class<P> playerClass;
-    private List<P> players;
+    private final List<P> players;
+    private final Class<P> playerClass;
     private Consumer<P> newPlayerConnectionEvent;
     private Consumer<P> playerDisconnectEvent;
 
@@ -86,14 +86,20 @@ public class GameServer<P extends Player>
                 player.addConnection(connection);
                 player.setOnDisconnect(() ->
                 {
-                    if(removePlayerOnDisconnect)
-                        players.remove(player);
+                    synchronized(players)
+                    {
+                        if(removePlayerOnDisconnect)
+                            players.remove(player);
+                    }
 
                     if(playerDisconnectEvent != null)
                         playerDisconnectEvent.accept(player);
                 });
 
-                players.add(player);
+                synchronized(players)
+                {
+                    players.add(player);
+                }
 
                 if(newPlayerConnectionEvent != null)
                     newPlayerConnectionEvent.accept(player);
@@ -125,14 +131,17 @@ public class GameServer<P extends Player>
      */
     public void broadcast(Object obj)
     {
-        if(reverseBroadcast)
+        synchronized(players)
         {
-            for(int i = players.size() - 1; i >= 0; i--)
-                players.get(i).send(obj);
-        }
-        else players.forEach(p -> p.send(obj));
+            if(reverseBroadcast)
+            {
+                for(int i = players.size() - 1; i >= 0; i--)
+                    players.get(i).send(obj);
+            }
+            else players.forEach(p -> p.send(obj));
 
-        reverseBroadcast = !reverseBroadcast;
+            reverseBroadcast = !reverseBroadcast;
+        }
     }
 
     /**
@@ -210,10 +219,13 @@ public class GameServer<P extends Player>
             while(gameLoopThread != null)
             {
                 long lastTime = System.nanoTime();
-                gameLoopEvent.call();
+                synchronized (players)
+                {
+                    gameLoopEvent.call();
+                }
                 try
                 {
-                    Thread.sleep((lastTime - System.nanoTime() + updateTimeNanoSec) / 1000000);
+                    Thread.sleep(Math.max(0,(lastTime - System.nanoTime() + updateTimeNanoSec) / 1000000));
                 }
                 catch (InterruptedException ignore) {}
             }
