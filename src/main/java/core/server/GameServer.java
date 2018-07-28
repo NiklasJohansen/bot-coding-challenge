@@ -29,6 +29,7 @@ public class GameServer<P extends Player>
 
     private final List<P> players;
     private final Class<P> playerClass;
+
     private Consumer<P> newPlayerConnectionEvent;
     private Consumer<P> playerDisconnectEvent;
 
