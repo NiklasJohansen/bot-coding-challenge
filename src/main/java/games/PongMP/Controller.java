@@ -2,8 +2,11 @@ package games.PongMP;
 
 import core.server.GameServer;
 import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
+
+import java.util.List;
 
 public class Controller
 {
@@ -20,6 +23,13 @@ public class Controller
         openServer();
         startGameLoop();
         addEventListeners();
+    }
+
+    public void closeRequest()
+    {
+        server.shutdown();
+        Platform.exit();
+        System.exit(0);
     }
 
     private void openServer()
@@ -55,8 +65,12 @@ public class Controller
 
     private void updateGame()
     {
-        gameBoard.update(server.getPlayers());
-        gameBoard.render(server.getPlayers(), canvas);
+        final List<PongPlayer> players = server.getPlayers();
+        synchronized(players)
+        {
+            gameBoard.update(players);
+            gameBoard.render(players, canvas);
+        }
     }
 
     private void addEventListeners()
@@ -68,7 +82,6 @@ public class Controller
               //  b.xPosBall = event.getX();
               //  b.yPosBall = event.getY();
             }
-
         });
     }
 

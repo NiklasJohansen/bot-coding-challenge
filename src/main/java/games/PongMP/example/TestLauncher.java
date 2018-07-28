@@ -1,6 +1,6 @@
-package games.PongMP;
+package games.PongMP.example;
 
-import games.PongMP.example.PongClientExample;
+import games.PongMP.PongMain;
 
 public class TestLauncher
 {
