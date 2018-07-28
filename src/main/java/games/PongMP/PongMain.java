@@ -11,9 +11,12 @@ public class PongMain extends Application
     @Override
     public void start(Stage primaryStage) throws Exception
     {
-        AnchorPane root = FXMLLoader.load(getClass().getResource("/PongMP/userinterface.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/PongMP/userinterface.fxml"));
+        AnchorPane root = loader.load();
+
         primaryStage.setTitle("PongMP");
         primaryStage.setScene(new Scene(root, root.getPrefWidth(), root.getPrefHeight()));
+        primaryStage.setOnCloseRequest(event -> ((Controller)loader.getController()).closeRequest());
         primaryStage.show();
     }
 
