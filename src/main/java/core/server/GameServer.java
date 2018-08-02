@@ -4,9 +4,8 @@ import core.server.connection.Connection;
 import core.server.connection.ConnectionHandler;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -49,7 +48,7 @@ public class GameServer<P extends Player>
                 throw new IllegalArgumentException("The player class constructor cannot take parameters!");
 
         this.playerClass = playerClass;
-        this.players = Collections.synchronizedList(new ArrayList<>());
+        this.players = new CopyOnWriteArrayList<>();
         this.allowNewConnections = true;
         this.removePlayerOnDisconnect = true;
     }
