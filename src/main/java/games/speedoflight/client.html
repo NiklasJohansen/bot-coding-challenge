@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript Client</title>
+</head>
+<body>
+<h1>The Speed of Light</h1>
+<label id="label"></label>
+<input id="username" placeholder="username" onkeyup="updateUsername()" />
+
+<table>
+    <tbody>
+        <tr>
+            <td colspan="2">
+                <div align="center">
+                    <button onmousedown="wPressed()" onmouseup="wReleased()" >W</button>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <button onmousedown="aPressed()" onmouseup="aReleased()">A</button>
+            </td>
+            <td>
+                <button onmousedown="dPressed()" onmouseup="dReleased()">D</button>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div align="center">
+                    <button onmousedown="sPressed()" onmouseup="sReleased()">S</button>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+</body>
+<script>
+
+    var input = {
+        username: "",
+        up: false,
+        down: false,
+        rotLeft: false,
+        rotRight: false,
+        fire: false
+    }
+
+    var connection = new WebSocket('ws://10.0.0.123:55501');
+
+    document.onkeyup = function checkKeyUp(e) {
+
+        if (e.keyCode == '87') {wReleased();}
+        else if (e.keyCode == '83') {sReleased();}
+        else if (e.keyCode == '65') {aReleased();}
+        else if (e.keyCode == '68') {dReleased();}
+    }
+
+    document.onkeydown = function checkKeyDown(e)
+    {
+        if (e.keyCode == '38') {firePressed();}
+        else if (e.keyCode == '87') {wPressed();}
+        else if (e.keyCode == '83') {sPressed();}
+        else if (e.keyCode == '65') {aPressed();}
+        else if (e.keyCode == '68') {dPressed();}
+    }
+
+    function wPressed() { input.up = true; send(input); }
+    function wReleased() { input.up = false; send(input); }
+    function sPressed() { input.down = true; send(input); }
+    function sReleased() { input.down = false; send(input); }
+    function aPressed() { input.rotLeft = true; send(input); }
+    function aReleased() { input.rotLeft = false; send(input); }
+    function dPressed() { input.rotRight = true; send(input); }
+    function dReleased() { input.rotRight = false; send(input); }
+    function firePressed() { input.fire = true; send(input); input.fire = false; }
+
+    function updateUsername()
+    {
+        input.username = document.getElementById('username').value
+        send(input)
+    }
+
+    function send(obj) {
+        connection.send(JSON.stringify(obj))
+    }
+
+    connection.onmessage = function(event) {
+        try {
+            // var gameState = JSON.parse(event.data);
+            //
+            // var clientResponse = JSON.stringify(input);
+            // input.up = input.down = input.left = input.right = false;
+            //
+            // connection.send(clientResponse);
+        }
+        catch (error) {
+            console.log(event.data);
+        }
+    }
+</script>
+</html>
