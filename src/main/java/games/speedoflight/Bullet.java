@@ -5,11 +5,18 @@ import javafx.scene.paint.Color;
 
 public class Bullet
 {
+    private final float START_LIFE = 100;
+
+
     private float xPos;
     private float yPos;
     private float xPosLast;
     private float yPosLast;
-    private float direction;
+
+
+    private float xPosLastLast;
+    private float yPosLastLast;
+
     private float life;
     private float mass;
 
@@ -18,12 +25,13 @@ public class Bullet
     public Bullet(LightPlayer spawner, float xPos, float yPos, float direction, float speed)
     {
         this.spawner = spawner;
-        this.direction = direction;
         this.xPos = xPos;
         this.yPos = yPos;
         this.xPosLast = xPos - (float) Math.cos(direction) * speed;
         this.yPosLast = yPos - (float) Math.sin(direction) * speed;
-        this.life = 100;
+        this.xPosLastLast = xPos;
+        this.yPosLastLast = yPos;
+        this.life = START_LIFE;
         this.mass = 1000;
     }
 
@@ -31,6 +39,13 @@ public class Bullet
     {
         float xVel = xPos - xPosLast;
         float yVel = yPos - yPosLast;
+
+        if(life != START_LIFE)
+        {
+            xPosLastLast = xPosLast;
+            yPosLastLast = yPosLast;
+        }
+
         xPosLast = xPos;
         yPosLast = yPos;
         xPos += xVel;
@@ -38,35 +53,12 @@ public class Bullet
         life--;
     }
 
-    public void borderConstrain(float left, float top, float right, float bottom)
+    public void draw(Camera camera)
     {
-        if (xPos < left)
-        {
-            xPosLast = xPos;
-            xPos = left;
-        }
-        else if (xPos > right)
-        {
-            xPosLast = xPos;
-            xPos = right;
-        }
-
-        if (yPos < top)
-        {
-            yPosLast = yPos;
-            yPos = top ;
-        }
-        else if (yPos > bottom)
-        {
-            yPosLast = yPos;
-            yPos = bottom;
-        }
-    }
-
-    public void draw(GraphicsContext gc)
-    {
-        gc.setStroke(Color.color(1,1,0, life / 100.0f));
-        gc.strokeLine(xPos, yPos, xPosLast, yPosLast);
+        GraphicsContext gc = camera.getGraphicsContext();
+        gc.setStroke(Color.color(1,1,0.8, life / 100.0f));
+        gc.strokeLine(xPosLastLast, yPosLastLast, xPosLast, yPosLast);
+        gc.strokeLine(xPosLast, yPosLast, xPos, yPos);
     }
 
     public LightPlayer getOwner()
@@ -141,11 +133,9 @@ public class Bullet
         return life / 100.0f;
     }
 
-
-    public LightPlayer getSpawner()
+    public void decay()
     {
-        return spawner;
+        this.life *= 0.8f;
     }
-
-
 }
+
