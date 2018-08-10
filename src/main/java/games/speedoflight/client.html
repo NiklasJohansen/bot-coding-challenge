@@ -47,7 +47,8 @@
         fire: false
     }
 
-    var connection = new WebSocket('ws://10.0.0.123:55501');
+    //var connection = new WebSocket('ws://10.0.0.123:55501');
+    var connection = new WebSocket('ws://90.149.117.69:55501');
 
     document.onkeyup = function checkKeyUp(e) {
 
@@ -86,18 +87,59 @@
         connection.send(JSON.stringify(obj))
     }
 
+    var gameState = null;
+
     connection.onmessage = function(event) {
         try {
-            // var gameState = JSON.parse(event.data);
-            //
-            // var clientResponse = JSON.stringify(input);
-            // input.up = input.down = input.left = input.right = false;
-            //
-            // connection.send(clientResponse);
+            gameState = JSON.parse(event.data);
+            var decodedMap = decodeMapArray2(gameState.map, gameState.width, gameState.height);
+            console.log(decodedMap);
+            //console.log(isWalkable(gameState.map, gameState.width, gameState.height, 0, 8))
         }
         catch (error) {
-            console.log(event.data);
+            console.log(error);
         }
     }
+
+    function decodeMapArray2(array, width, height)
+    {
+        var decodedArray = [];
+        var row = [];
+        for(var longIndex = 0; longIndex < array.length; longIndex++)
+        {
+            for(var bitIndex = 31; bitIndex >= 0; bitIndex--)
+            {
+                if((array[longIndex] & (1 << bitIndex)) !== 0)
+                    row.push("O");
+                else
+                    row.push(" ");
+
+                if(row.length === width)
+                {
+                    decodedArray.push(row);
+                    row = [];
+
+                    if(decodedArray.length === height)
+                        return decodedArray;
+                }
+            }
+        }
+
+        return decodedArray;
+    }
+
+    function isWalkable(array, width, height, xPos, yPos)
+    {
+        if(xPos < 0 || xPos >= width || yPos < 0 || yPos >= height)
+            return false;
+
+        var index = yPos * width + xPos;
+        var longIndex = index / 32;
+        var bitIndex = 31 - (index % 32);
+        return !((array[longIndex] & (1 << bitIndex)) !== 0);
+    }
+
+
+
 </script>
 </html>

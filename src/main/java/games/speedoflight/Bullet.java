@@ -2,25 +2,26 @@ package games.speedoflight;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 
 public class Bullet
 {
     private final float START_LIFE = 100;
 
-
     private float xPos;
     private float yPos;
     private float xPosLast;
     private float yPosLast;
-
-
     private float xPosLastLast;
     private float yPosLastLast;
-
     private float life;
     private float mass;
-
+    private int framesAlive;
     private LightPlayer spawner;
+
+    private static LinearGradient gradient;
 
     public Bullet(LightPlayer spawner, float xPos, float yPos, float direction, float speed)
     {
@@ -33,19 +34,21 @@ public class Bullet
         this.yPosLastLast = yPos;
         this.life = START_LIFE;
         this.mass = 1000;
+
+        if(gradient == null)
+            gradient = new LinearGradient(0, 0, 1, 1, true,
+                    CycleMethod.REFLECT,
+                    new Stop(1.0, Color.YELLOW),
+                    new Stop(0.0, Color.TRANSPARENT));
+
     }
 
     public void update()
     {
         float xVel = xPos - xPosLast;
         float yVel = yPos - yPosLast;
-
-        if(life != START_LIFE)
-        {
-            xPosLastLast = xPosLast;
-            yPosLastLast = yPosLast;
-        }
-
+        xPosLastLast = xPosLast;
+        yPosLastLast = yPosLast;
         xPosLast = xPos;
         yPosLast = yPos;
         xPos += xVel;
@@ -56,9 +59,36 @@ public class Bullet
     public void draw(Camera camera)
     {
         GraphicsContext gc = camera.getGraphicsContext();
-        gc.setStroke(Color.color(1,1,0.8, life / 100.0f));
-        gc.strokeLine(xPosLastLast, yPosLastLast, xPosLast, yPosLast);
-        gc.strokeLine(xPosLast, yPosLast, xPos, yPos);
+        //gc.setStroke(Color.color(1,1,0.8, life / 100.0f));
+        //gc.setStroke(Color.color(1,1,0.8, life / 100.0f));
+        gc.setStroke(gradient);
+
+//        if(framesAlive > 0)
+//        {
+//            gc.strokeLine(xPosLast, yPosLast, xPos, yPos);
+//            if(framesAlive < 2)
+//                gc.strokeLine(spawner.getX(), spawner.getY(), xPosLast, yPosLast);
+//            else
+//                gc.strokeLine(xPosLastLast, yPosLastLast, xPosLast, yPosLast);
+//        }
+
+        if(framesAlive > 0)
+        {
+            gc.beginPath();
+            gc.setLineWidth(2);
+            gc.moveTo(xPos, yPos);
+            gc.lineTo(xPosLast, yPosLast);
+
+            if(framesAlive < 2)
+                gc.lineTo(spawner.getX(), spawner.getY());
+            else
+                gc.lineTo(xPosLastLast, yPosLastLast);
+
+            gc.stroke();
+            gc.setLineWidth(1);
+        }
+
+        framesAlive++;
     }
 
     public LightPlayer getOwner()

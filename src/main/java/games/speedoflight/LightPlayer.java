@@ -53,22 +53,49 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
 
     private void handleAction(ClientResponse response, List<Bullet> bullets)
     {
-        if(response != null && response.fire && !isDead())
+        if(isDead())
+            return;
+
+        if(response != null && response.fire)
         {
             response.fire = false;
             bullets.add(new Bullet(this,
                     xPos + (float)Math.cos(rotation) * (radius + 2),
                     yPos + (float)Math.sin(rotation) * (radius + 2),
-                    rotation, 50));
+                    rotation, 70));
         }
 
         for (int i = 0; i < bullets.size(); i++)
         {
             Bullet b = bullets.get(i);
 
-            if(b.getOwner() == this)
+            if(b.getOwner() == this || b.isDead())
                 continue;
 
+            float[] intersection = Util.lineCircleIntersection(xPos, yPos, radius,
+                    b.getXLast(), b.getYLast(), b.getX(), b.getY());
+
+            if (intersection != null)
+            {
+                float prevLife = life;
+                life -= b.getSpeed() * b.getLife() * 0.5f;
+
+                b.setX(intersection[0]);
+                b.setY(intersection[1]);
+                b.setXLast(intersection[0]);
+                b.setYLast(intersection[1]);
+                b.setDead();
+
+                if(life <= 0 && prevLife > 0)
+                {
+                    b.getOwner().increaseKills();
+                    deaths++;
+                }
+            }
+
+
+
+            /*
             float xDiff = xPos - b.getX();
             float yDiff = yPos - b.getY();
             float dist = (float)Math.sqrt(xDiff * xDiff + yDiff * yDiff);
@@ -114,6 +141,8 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
                     }
                 }
             }
+            */
+
         }
     }
 

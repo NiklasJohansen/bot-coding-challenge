@@ -1,12 +1,10 @@
 package games.speedoflight;
 
-import javafx.scene.paint.Color;
 
-public class Util {
-
-
-    public static double[] lineIntersection(double x0, double y0, double x1, double y1,
-                                      double x2, double y2, double x3, double y3)
+public class Util
+{
+    public static double[] lineSegmentIntersection(double x0, double y0, double x1, double y1,
+                                                   double x2, double y2, double x3, double y3)
     {
         double s1x = x1 - x0;
         double s1y = y1 - y0;
@@ -22,18 +20,9 @@ public class Util {
             return null;
     }
 
-    public static boolean isPointInsidePolygon(float[][] points, float xTest, float yTest)
-    {
-        boolean inside = false;
-        for (int i = 0, j = points.length - 1; i < points.length; j = i++)
-        {
-            if (((points[i][1] > yTest) != (points[j][1] > yTest)) &&
-                    (xTest < (points[j][0] - points[i][0]) * (yTest - points[i][1]) / (points[j][1] - points[i][1]) + points[i][0]))
-                inside = !inside;
-        }
-        return inside;
-    }
-
+    /**
+     * PNPOLY - https://wrf.ecse.rpi.edu//Research/Short_Notes/pnpoly.html
+     */
     public static boolean isPointInsidePolygon(float xPoint, float yPoint, double[] xVertices, double[] yVertices)
     {
         boolean inside = false;
@@ -44,6 +33,14 @@ public class Util {
                 inside = !inside;
         }
         return inside;
+    }
+
+    public static boolean isPointInsideCircle(float xPoint, float yPoint, float xCircle, float yCircle, float radius)
+    {
+        float xDelta = xPoint - xCircle;
+        float yDelta = yPoint - yCircle;
+        float distSquared = xDelta * xDelta + yDelta * yDelta;
+        return distSquared < radius * radius;
     }
 
     public static double pointEdgeDistance(double xPoint, double yPoint, double x0, double y0, double x1, double y1)
@@ -70,6 +67,50 @@ public class Util {
         return Math.sqrt(xPointProjVec * xPointProjVec + yPointProjVec * yPointProjVec);
     }
 
+    /**
+     * https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
+     */
+    public static float[] lineCircleIntersection(float xCircle, float yCircle, float radius,
+                                                 float x0, float y0, float x1, float y1)
+    {
+        float xDir = x1 - x0;
+        float yDir = y1 - y0;
+        float lineLength = (float) Math.sqrt(xDir * xDir + yDir * yDir);
+        xDir /= lineLength;
+        yDir /= lineLength;
 
+        float xL = xCircle - x0;
+        float yL = yCircle - y0;
 
+        float tca = xL * xDir + yL * yDir;
+        if(tca < 0)
+            return null;
+
+        float d2 = (xL * xL + yL * yL) - tca * tca;
+        if(d2 > radius * radius)
+            return null;
+
+        float thc = (float) Math.sqrt((radius * radius) - d2);
+        float t0 = tca - thc;
+        float t1 = tca + thc;
+
+        if(t0 > t1)
+        {
+            float temp = t0;
+            t0 = t1;
+            t1 = temp;
+        }
+
+        if(t0 < 0)
+        {
+            t0 = t1;
+            if(t0 < 0)
+                return null;
+        }
+
+        if(lineLength < t0)
+            return null;
+
+        return new float[] {x0 + xDir * t0, y0 + yDir * t0};
+    }
 }

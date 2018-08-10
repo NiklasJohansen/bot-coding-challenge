@@ -1,9 +1,11 @@
 package games.speedoflight;
 
 import core.server.GameServer;
+import games.speedoflight.environmemt.CollisionMask;
 import games.speedoflight.environmemt.Map;
-import games.speedoflight.environmemt.MapEntity;
-import games.speedoflight.environmemt.SpawnPoint;
+import games.speedoflight.environmemt.MapEditor;
+import games.speedoflight.environmemt.entities.Obstacle;
+import games.speedoflight.environmemt.entities.SpawnPoint;
 import javafx.animation.AnimationTimer;
 
 import javafx.application.Platform;
@@ -22,6 +24,13 @@ import java.util.List;
 
 public class Controller
 {
+    private enum GameState
+    {
+        LOBBY, ROUND_STARTED, ROUND_OVER, MAP_EDITOR;
+    }
+
+    private GameState gameState;
+
     private final int ROUND_BEGIN_COUNTDOWN = 10;
 
     @FXML private Canvas canvas;
@@ -31,9 +40,8 @@ public class Controller
     private Camera camera;
     private GameServer<LightPlayer> server;
     private ArrayList<Bullet> bullets;
+    private MapEditor mapEditor;
 
-    private boolean gameStarted;
-    private boolean roundOver;
     private float animationCounter;
 
     private int countDown = 10;
@@ -45,19 +53,20 @@ public class Controller
 
     public static boolean enable = false;
 
-
     @FXML
     public void initialize()
     {
         addEventListeners();
-        startGameLoop();
         openServer();
+        startGameLoop();
 
-        this.map = new Map();
+        this.map = MapLoader.load("none");
         this.camera = new Camera(canvas, map.getCenterX(), map.getCenterY());
         this.camera.setTarget(map.getCenterX(), map.getCenterY());
         this.bullets = new ArrayList<>();
         this.countDown = ROUND_BEGIN_COUNTDOWN;
+        this.gameState = GameState.LOBBY;
+        this.mapEditor = new MapEditor();
     }
 
     public void closeRequest()
@@ -75,8 +84,6 @@ public class Controller
             {
                 updateGame();
                 renderGame();
-
-
             }
         }.start();
     }
@@ -91,53 +98,52 @@ public class Controller
             player.setY(point.getY());
             player.setXLast(point.getX());
             player.setYLast(point.getY());
+            player.send(createGameState());
         });
+
+        this.server.setGameLoop(1, () ->
+        {
+            if(map != null)
+            {
+                CollisionMask mask = map.getCollisionMask();
+                if(mask != null)
+                {
+                    if(map.isUpdated())
+                        server.broadcast(createGameState());
+                }
+            }
+        });
+
         this.server.start(55500);
     }
 
-    private void updateGame()
+    private GameData createGameState()
     {
-        updateGameState();
-
-        if(gameStarted)
-        {
-            server.getPlayers().forEach(player ->
-            {
-                player.update(bullets);
-                resolveCollisions();
-            });
-
-            for(int i = 0; i < bullets.size() && bullets.size() > 0; i++)
-            {
-                Bullet b = bullets.get(i);
-                b.update();
-
-                for(MapEntity o : map.getMapEntities())
-                    o.resolveBulletCollision(b);
-
-                if(b.isDead())
-                {
-                    bullets.remove(b);
-                    i--;
-                }
-            }
-        }
+        GameData gameState = new GameData();
+        CollisionMask mask = map.getCollisionMask();
+        gameState.map = mask.getIntegerSequenceMask();
+        gameState.width = mask.getWidth();
+        gameState.height = mask.getHeight();
+        return gameState;
     }
 
-    private void updateGameState()
+    private void updateGame()
     {
         int playersAlive = 0;
         for(LightPlayer player: server.getPlayers())
             if(!player.isDead())
                 playersAlive++;
 
-        if(gameStarted)
+        switch(gameState)
         {
-            if(playersAlive < 2 && server.getPlayers().size() > 1)
-                roundOver = true;
+            case ROUND_STARTED:
+                if(playersAlive < 2 && server.getPlayers().size() > 1)
+                    gameState = GameState.ROUND_OVER;
 
-            if(roundOver)
-            {
+                updatePlayers();
+                break;
+
+            case ROUND_OVER:
                 if(countDown == ROUND_BEGIN_COUNTDOWN)
                 {
                     Collections.sort(server.getPlayers());
@@ -147,19 +153,44 @@ public class Controller
                 }
                 else if(countDown == 0)
                 {
+                    gameState = GameState.ROUND_STARTED;
                     countDown = ROUND_BEGIN_COUNTDOWN;
-                    roundOver = false;
                     server.allowNewConnections(false);
                     respawn();
-                    map.reloadMap();
                 }
                 else if(System.currentTimeMillis() > countDownTimer + 1000)
                 {
                     countDown--;
                     countDownTimer = System.currentTimeMillis();
                 }
+                break;
+
+            case MAP_EDITOR:
+                map = mapEditor.edit(map, camera);
+                updatePlayers();
+                break;
+        }
+
+    }
+
+    private void updatePlayers()
+    {
+        for (int i = 0; i < bullets.size() && bullets.size() > 0; i++)
+        {
+            Bullet b = bullets.get(i);
+            b.update();
+
+            for (Obstacle o : map.getObstacles())
+                o.resolveBulletCollision(b);
+
+            if (b.isDead()) {
+                bullets.remove(b);
+                i--;
             }
         }
+
+        server.getPlayers().forEach(player -> player.update(bullets));
+        resolveCollisions();
     }
 
     private void resolveCollisions()
@@ -169,7 +200,7 @@ public class Controller
             for (int j = i + 1; j < players.size(); j++)
                 players.get(i).resolvePlayerCollision(players.get(j));
 
-        for(MapEntity entity : map.getMapEntities())
+        for(Obstacle entity : map.getObstacles())
             for(LightPlayer player : players)
                 entity.resolvePlayerCollision(player);
     }
@@ -192,20 +223,35 @@ public class Controller
         camera.endCapture();
         camera.update();
 
-        if(gameStarted)
+        switch (gameState)
         {
-            camera.followAlivePlayers(server.getPlayers());
+            case LOBBY:
+                renderStartScreen(gc);
+                camera.setTarget(map.getCenterX(), map.getCenterY());
+                camera.setTargetZoom(1.0f);
+                break;
 
-            if(roundOver)
+            case ROUND_STARTED:
+                camera.followAlivePlayers(server.getPlayers());
+                break;
+
+            case ROUND_OVER:
                 renderScoreBoard(gc);
-        }
-        else
-        {
-            renderStartScreen(gc);
-            camera.setTarget(map.getCenterX(), map.getCenterY());
-            camera.setTargetZoom(1.0f);
+                break;
+
+            case MAP_EDITOR:
+                mapEditor.draw(camera);
+                break;
         }
 
+        renderFPS(camera);
+        animationCounter = (animationCounter + 1) % 256;
+    }
+
+
+    private void renderFPS(Camera camera)
+    {
+        GraphicsContext gc = camera.getGraphicsContext();
         gc.setFill(Color.WHITE);
         gc.setFont(Font.font(20));
         gc.fillText(String.valueOf(fps), 10, 20);
@@ -217,8 +263,6 @@ public class Controller
             fpsCounter = 0;
             fpsTimer = System.currentTimeMillis();
         }
-
-        animationCounter = (animationCounter + 1) % 256;
     }
 
     private void renderStartScreen(GraphicsContext gc)
@@ -293,41 +337,59 @@ public class Controller
     {
         Platform.runLater(() ->
         {
-            canvas.setOnMouseMoved(event ->
-            {
+            canvas.setOnMouseDragged(event ->
+                    mapEditor.handleMouseMoveEvents(event));
 
+            canvas.setOnMouseMoved(event ->
+                    mapEditor.handleMouseMoveEvents(event));
+
+            canvas.setOnMousePressed(event ->
+            {
+                if(gameState == GameState.MAP_EDITOR)
+                    mapEditor.handleMousePressEvents(event, true);
             });
 
-            anchorPane.getScene().setOnKeyTyped(event -> {
-
+            canvas.setOnMouseReleased(event ->
+            {
+                if(gameState == GameState.MAP_EDITOR)
+                    mapEditor.handleMousePressEvents(event, false);
             });
 
             anchorPane.getScene().setOnKeyPressed(event ->
             {
-                if(event.getCode() == KeyCode.SPACE)
+                switch (gameState)
                 {
-                    if(!gameStarted && server.getPlayers().size() > 0)
-                    {
-                        gameStarted = true;
-                        server.allowNewConnections(false);
-                    }
+                    case MAP_EDITOR:
+                        mapEditor.handleKeyEvents(event, true);
+                        break;
+
+                    case LOBBY:
+                        if(event.getCode() == KeyCode.SPACE && server.getPlayers().size() > 0)
+                        {
+                            gameState = GameState.ROUND_STARTED;
+                            server.allowNewConnections(false);
+                            respawn();
+                        }
+                        else if(event.getCode() == KeyCode.E)
+                        {
+                            gameState = GameState.MAP_EDITOR;
+                        }
+                        break;
+
+                    case ROUND_STARTED:
+                        if(event.getCode() == KeyCode.ESCAPE)
+                        {
+                            gameState = GameState.LOBBY;
+                            server.allowNewConnections(true);
+                        }
+                        break;
                 }
-                else if (event.getCode() == KeyCode.ESCAPE)
-                {
-                    if(gameStarted)
-                    {
-                        gameStarted = false;
-                        server.allowNewConnections(true);
-                    }
-                }
-                else if(event.getCode() == KeyCode.E)
-                    enable = true;
             });
 
             anchorPane.getScene().setOnKeyReleased(event ->
             {
-                if(event.isControlDown() && event.getCode() == KeyCode.E)
-                    enable = false;
+                if(gameState == GameState.MAP_EDITOR)
+                    mapEditor.handleKeyEvents(event, false);
             });
 
             anchorPane.getScene().widthProperty().addListener((o, oldValue, newValue) ->

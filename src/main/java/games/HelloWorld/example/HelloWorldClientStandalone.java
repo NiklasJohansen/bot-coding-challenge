@@ -14,7 +14,7 @@ import java.net.Socket;
  * without using any functionality from the core library. The only dependency required for
  * the following code to run is the Gson JSON-parser from Google.
  *
- * The GameState and ClientResponse classes defined inside this class is used to parse the
+ * The GameData and ClientResponse classes defined inside this class is used to parse the
  * JSON-formatted messaged into easily accessible objects. They should match the classes
  * defined by the server exactly.
  *

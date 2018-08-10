@@ -1,17 +1,13 @@
-package games.speedoflight.environmemt;
+package games.speedoflight.environmemt.entities;
 
 import games.speedoflight.*;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.effect.DropShadow;
 import javafx.scene.paint.Color;
-import javafx.scene.transform.Affine;
-import javafx.scene.transform.Rotate;
 
-public class RectObstacle extends MapEntity
+public class RectObstacle extends Obstacle
 {
     private double[] xVertices;
     private double[] yVertices;
-    private double angle;
     private float width;
     private float height;
 
@@ -20,16 +16,35 @@ public class RectObstacle extends MapEntity
         this(xPos, yPos, width, height, 0);
     }
 
-    public RectObstacle(float xPos, float yPos, float width, float height, double angle)
+    public RectObstacle(float xPos, float yPos, float width, float height, float angle)
     {
-        super(xPos, yPos, true);
-        this.angle = angle;
+        super(xPos, yPos);
+        this.rotation = angle;
         this.width = width;
         this.height = height;
         this.xVertices = new double[4];
         this.yVertices = new double[4];
+        calculateVertices();
+    }
 
-        calculateVertices(angle);
+    private void calculateVertices()
+    {
+        float w = xScale * width / 2;
+        float h = yScale * height / 2;
+
+        double x0 = Math.cos(rotation) * w;
+        double y0 = Math.sin(rotation) * w;
+        double x1 = -Math.sin(rotation) * h;
+        double y1 =  Math.cos(rotation) * h;
+
+        xVertices[0] = (xPos - x0) - x1;
+        yVertices[0] = (yPos - y0) - y1;
+        xVertices[1] = (xPos - x0) + x1;
+        yVertices[1] = (yPos - y0) + y1;
+        xVertices[2] = (xPos + x0) + x1;
+        yVertices[2] = (yPos + y0) + y1;
+        xVertices[3] = (xPos + x0) - x1;
+        yVertices[3] = (yPos + y0) - y1;
     }
 
     @Override
@@ -45,11 +60,11 @@ public class RectObstacle extends MapEntity
                 gc.fillPolygon(xVertices, yVertices, xVertices.length);
             }
 
-            double width = this.width * textureScale;
-            double height = this.height * textureScale;
+            double width = this.width * textureScale * xScale;
+            double height = this.height * textureScale * yScale;
             gc.save();
             gc.translate(xPos, yPos);
-            gc.rotate(Math.toDegrees(angle));
+            gc.rotate(Math.toDegrees(rotation));
             gc.translate(-(xPos+width/2), -(yPos+height/2));
             gc.drawImage(texture, xPos, yPos, width, height);
             gc.restore();
@@ -61,24 +76,10 @@ public class RectObstacle extends MapEntity
         }
     }
 
-    private void calculateVertices(double angle)
+    @Override
+    public boolean inside(float xPos, float yPos)
     {
-        float w = width / 2;
-        float h = height / 2;
-
-        double x0 = Math.cos(angle) * w;
-        double y0 = Math.sin(angle) * w;
-        double x1 = -Math.sin(angle) * h;
-        double y1 =  Math.cos(angle) * h;
-
-        xVertices[0] = (xPos - x0) - x1;
-        yVertices[0] = (yPos - y0) - y1;
-        xVertices[1] = (xPos - x0) + x1;
-        yVertices[1] = (yPos - y0) + y1;
-        xVertices[2] = (xPos + x0) + x1;
-        yVertices[2] = (yPos + y0) + y1;
-        xVertices[3] = (xPos + x0) - x1;
-        yVertices[3] = (yPos + y0) - y1;
+        return Util.isPointInsidePolygon(xPos, yPos, xVertices, yVertices);
     }
 
     @Override
@@ -136,11 +137,6 @@ public class RectObstacle extends MapEntity
         return lowestDist;
     }
 
-    public boolean isPointInside(float xPos, float yPos)
-    {
-        return Util.isPointInsidePolygon(xPos, yPos, xVertices, yVertices);
-    }
-
 
     @Override
     public void resolveBulletCollision(Bullet bullet)
@@ -157,7 +153,8 @@ public class RectObstacle extends MapEntity
 
         for(int i = 0, j = xVertices.length - 1; i < xVertices.length; j = i++)
         {
-            double[] intersection = Util.lineIntersection(xPosBullet, yPosBullet, xPosLastBullet, yPosLastBullet,
+            double[] intersection = Util.lineSegmentIntersection(
+                    xPosBullet, yPosBullet, xPosLastBullet, yPosLastBullet,
                     xVertices[i], yVertices[i], xVertices[j], yVertices[j]);
 
             if(intersection != null)
@@ -200,4 +197,79 @@ public class RectObstacle extends MapEntity
         if(Util.isPointInsidePolygon(bullet.getX(), bullet.getY(), xVertices, yVertices))
             bullet.setDead();
     }
+
+    @Override
+    public byte[][] getCollisionMask(int resolution)
+    {
+        int left = (int) xVertices[0], right = (int) xVertices[0];
+        int bottom = (int) yVertices[0], top = (int) yVertices[0];
+        for(int i = 0; i < xVertices.length; i++)
+        {
+            left = Math.min(left, (int)xVertices[i]);
+            right = Math.max(right, (int)xVertices[i]);
+            top = Math.min(top, (int)yVertices[i]);
+            bottom = Math.max(bottom, (int)yVertices[i]);
+        }
+
+        int maskWidth = (right - left) / resolution;
+        int maskHeight = (bottom - top) / resolution;
+        byte[][] mask = new byte[maskHeight][maskWidth];
+
+        for(int y = 0; y < maskHeight; y++)
+        {
+            for(int x = 0; x < maskWidth; x++)
+            {
+                int xWorld = left + x * resolution + (resolution / 2);
+                int yWorld = top + y * resolution + (resolution / 2);
+
+                if(Util.isPointInsidePolygon(xWorld, yWorld, xVertices, yVertices))
+                    mask[y][x] = 1;
+            }
+        }
+
+        storedCollisionMask = mask;
+        return mask;
+    }
+
+
+    @Override
+    public void setX(float x)
+    {
+        float xOld = xPos;
+        this.xPos = x;
+        calculateVertices();
+        onMoveEvent.accept(new MoveEvent(xOld, yPos, xPos, yPos));
+    }
+
+    @Override
+    public void setY(float y)
+    {
+        float yOld = yPos;
+        this.yPos = y;
+        calculateVertices();
+        onMoveEvent.accept(new MoveEvent(xPos, yOld, xPos, yPos));
+    }
+
+    @Override
+    public void setRotation(float rotation)
+    {
+        this.rotation = rotation;
+        calculateVertices();
+        onMoveEvent.accept(new MoveEvent(xPos, yPos, xPos, yPos));
+    }
+
+    public void setScaleX(float xScale)
+    {
+        this.xScale = xScale;
+        calculateVertices();
+        onMoveEvent.accept(new MoveEvent(xPos, yPos, xPos, yPos));
+    }
+    public void setScaleY(float yScale)
+    {
+        this.yScale = yScale;
+        calculateVertices();
+        onMoveEvent.accept(new MoveEvent(xPos, yPos, xPos, yPos));
+    }
+
+
 }

@@ -122,6 +122,21 @@ public class Camera
         return yPos;
     }
 
+    public float screenToWorldPositionX(float xPosScreen)
+    {
+        return (xPosScreen / scale) + (xPos - ((float) canvas.getWidth() / 2 / scale));
+    }
+
+    public float screenToWorldPositionY(float yPosScreen)
+    {
+        return (yPosScreen / scale) + (yPos - ((float) canvas.getHeight() / 2 / scale));
+    }
+
+    public float getZoom()
+    {
+        return scale;
+    }
+
     public float getViewportWidth()
     {
         return (float) canvas.getWidth();

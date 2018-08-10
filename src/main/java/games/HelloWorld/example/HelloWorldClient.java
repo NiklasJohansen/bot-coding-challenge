@@ -7,7 +7,7 @@ import games.HelloWorld.HelloWorldServer;
 
 /**
  * This example class shows how the {@link GameClient} is used make a basic bot
- * for the {@link HelloWorldServer} example server. The code utilises the GameState and ClientResponse
+ * for the {@link HelloWorldServer} example server. The code utilises the GameData and ClientResponse
  * classes defined in the game code itself, and requires no further configuration. This bot
  * simply prints the data from the server to the console and answers with a response object.
  *

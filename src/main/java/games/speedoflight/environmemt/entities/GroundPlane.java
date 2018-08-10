@@ -1,8 +1,6 @@
-package games.speedoflight.environmemt;
+package games.speedoflight.environmemt.entities;
 
-import games.speedoflight.Bullet;
 import games.speedoflight.Camera;
-import games.speedoflight.LightPlayer;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
@@ -24,7 +22,7 @@ public class GroundPlane extends MapEntity
         GraphicsContext gc = camera.getGraphicsContext();
         if(texture != null)
         {
-            gc.drawImage(texture, xPos, yPos, width, height);
+            gc.drawImage(texture, xPos - width / 2, yPos - height / 2, width, height);
         }
         else
         {
@@ -34,8 +32,9 @@ public class GroundPlane extends MapEntity
     }
 
     @Override
-    public void resolvePlayerCollision(LightPlayer player){}
-
-    @Override
-    public void resolveBulletCollision(Bullet bullet){}
+    public boolean inside(float xPos, float yPos)
+    {
+        return xPos > this.xPos - width / 2 && xPos < this.xPos + width / 2 &&
+                yPos > this.yPos - height / 2 && yPos < this.yPos + height / 2;
+    }
 }

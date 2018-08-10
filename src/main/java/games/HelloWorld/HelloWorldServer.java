@@ -16,9 +16,9 @@ import java.util.Date;
  * Optional steps:
  * - Define what should happen when a new player connects
  * - Define what should happen when a player disconnects
- * - Set a game loop to repeatedly update the players with the current GameState.
+ * - Set a game loop to repeatedly update the players with the current GameData.
  *
- * This example server is set up to send a GameState object to all connected players every second.
+ * This example server is set up to send a GameData object to all connected players every second.
  * The content of the response packets received from the players will be printed to the console.
  *
  * @author Niklas Johansen
