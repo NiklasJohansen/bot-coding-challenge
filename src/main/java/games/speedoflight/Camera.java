@@ -60,6 +60,11 @@ public class Camera
         this.scaleTarget = (float) Math.max(0.1, Math.min(1.5, zoom));
     }
 
+    public void setZoom(float zoom)
+    {
+        this.scale = (float) Math.max(0.1, Math.min(1.5, zoom));
+    }
+
     public void zoom(double dir)
     {
         scale = (float) Math.max(0.1, Math.min(1.5, scale + dir));

@@ -92,57 +92,6 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
                     deaths++;
                 }
             }
-
-
-
-            /*
-            float xDiff = xPos - b.getX();
-            float yDiff = yPos - b.getY();
-            float dist = (float)Math.sqrt(xDiff * xDiff + yDiff * yDiff);
-
-            if(dist < radius * 2)
-            {
-                float xBulletDiff = b.getX() - b.getXLast();
-                float yBulletDiff = b.getY() - b.getYLast();
-
-                for(int j = 0; j < 10; j++)
-                {
-                    float xBullet = b.getXLast() + ((float)j / 10f) * xBulletDiff;
-                    float yBullet = b.getYLast() + ((float)j / 10f) * yBulletDiff;
-
-                    float xDiffInter = xPos - xBullet;
-                    float yDistInter = yPos - yBullet;
-                    float interpolatedDist = (float)Math.sqrt(xDiffInter * xDiffInter + yDistInter * yDistInter);
-
-                    if(interpolatedDist < radius)
-                    {
-                        float bulletSpeed = b.getSpeed();
-                        float bulletMass = 1.0f / b.getMass();
-                        float playerMass = 1.0f / mass;
-                        float totMass = playerMass + bulletMass;
-
-                        float xNorm = xBulletDiff / bulletSpeed;
-                        float yNorm = yBulletDiff / bulletSpeed;
-
-                        float penetration = radius - interpolatedDist;
-                        xPos += xNorm * penetration * (playerMass / totMass);
-                        yPos += yNorm * penetration * (playerMass / totMass);
-
-                        float prevLife = life;
-                        life -= b.getSpeed() * b.getLife();
-                        b.setDead();
-
-                        if(life <= 0 && prevLife > 0)
-                        {
-                            b.getOwner().increaseKills();
-                            deaths++;
-                        }
-                        break;
-                    }
-                }
-            }
-            */
-
         }
     }
 
@@ -305,9 +254,12 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
     {
         ClientResponse response = getResponse();
         if(response != null && !response.username.equals(""))
+        {
+            if (response.username.length() > 20)
+                response.username = response.username.substring(0, 20);
             return response.username;
-        else
-            return this.unknownName;
+        }
+        else return this.unknownName;
     }
 
     public void setAlive()
@@ -320,7 +272,7 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
         int killDiff = ((LightPlayer)player).getKills() - kills;
         if (killDiff != 0)
             return killDiff;
-        else return deaths - ((LightPlayer)player).getKills();
+        else return deaths - ((LightPlayer)player).getDeaths();
     }
 
     public static class ClientResponse

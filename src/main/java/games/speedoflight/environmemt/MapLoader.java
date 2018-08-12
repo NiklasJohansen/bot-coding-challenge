@@ -1,5 +1,6 @@
-package games.speedoflight;
+package games.speedoflight.environmemt;
 
+import games.speedoflight.TextureLoader;
 import games.speedoflight.environmemt.*;
 import games.speedoflight.environmemt.entities.GroundPlane;
 import games.speedoflight.environmemt.entities.RectObstacle;

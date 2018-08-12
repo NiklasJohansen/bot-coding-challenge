@@ -1,9 +1,9 @@
 package games.speedoflight;
 
 import core.server.GameServer;
-import games.speedoflight.environmemt.CollisionMask;
 import games.speedoflight.environmemt.Map;
 import games.speedoflight.environmemt.MapEditor;
+import games.speedoflight.environmemt.MapLoader;
 import games.speedoflight.environmemt.entities.Obstacle;
 import games.speedoflight.environmemt.entities.SpawnPoint;
 import javafx.animation.AnimationTimer;
@@ -41,6 +41,8 @@ public class Controller
     private GameServer<LightPlayer> server;
     private ArrayList<Bullet> bullets;
     private MapEditor mapEditor;
+    private GameData gameData;
+
 
     private float animationCounter;
 
@@ -98,18 +100,21 @@ public class Controller
             player.setY(point.getY());
             player.setXLast(point.getX());
             player.setYLast(point.getY());
-            player.send(createGameState());
+            GameData gameData = createGameData(true);
+            gameData.setThisPlayer(player);
+            player.send(gameData);
         });
 
         this.server.setGameLoop(1, () ->
         {
             if(map != null)
             {
-                CollisionMask mask = map.getCollisionMask();
-                if(mask != null)
+                GameData gameData = createGameData(false);
+
+                for(LightPlayer player : server.getPlayers())
                 {
-                    if(map.isUpdated())
-                        server.broadcast(createGameState());
+                    gameData.setThisPlayer(player);
+                    player.send(gameData);
                 }
             }
         });
@@ -117,14 +122,15 @@ public class Controller
         this.server.start(55500);
     }
 
-    private GameData createGameState()
+    private GameData createGameData(boolean addMapData)
     {
-        GameData gameState = new GameData();
-        CollisionMask mask = map.getCollisionMask();
-        gameState.map = mask.getIntegerSequenceMask();
-        gameState.width = mask.getWidth();
-        gameState.height = mask.getHeight();
-        return gameState;
+        gameData = new GameData();
+
+        if(map.isUpdated() || addMapData)
+            gameData.addMapData(map);
+
+        gameData.addPlayers(server.getPlayers());
+        return gameData;
     }
 
     private void updateGame()
@@ -337,6 +343,9 @@ public class Controller
     {
         Platform.runLater(() ->
         {
+            canvas.setOnScroll(event ->
+                    mapEditor.handleScrollEvent(event));
+
             canvas.setOnMouseDragged(event ->
                     mapEditor.handleMouseMoveEvents(event));
 

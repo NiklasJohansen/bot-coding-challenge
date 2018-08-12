@@ -47,9 +47,8 @@
         fire: false
     }
 
-    //var connection = new WebSocket('ws://10.0.0.123:55501');
-    var connection = new WebSocket('ws://90.149.117.69:55501');
-
+    var connection = new WebSocket('ws://10.0.0.123:55501');
+    
     document.onkeyup = function checkKeyUp(e) {
 
         if (e.keyCode == '87') {wReleased();}
@@ -87,21 +86,25 @@
         connection.send(JSON.stringify(obj))
     }
 
-    var gameState = null;
+    var gameData = null;
+    var map = null;
 
     connection.onmessage = function(event) {
         try {
-            gameState = JSON.parse(event.data);
-            var decodedMap = decodeMapArray2(gameState.map, gameState.width, gameState.height);
-            console.log(decodedMap);
-            //console.log(isWalkable(gameState.map, gameState.width, gameState.height, 0, 8))
+            gameData = JSON.parse(event.data);
+            console.log(gameData);
+            if(gameData.map !== undefined) {
+                map = gameData.map;
+                map.array = decodeMapArray(gameData.map.mapBitSequence, gameData.map.width, gameData.map.height);
+                console.log(map);
+            }
         }
         catch (error) {
             console.log(error);
         }
     }
 
-    function decodeMapArray2(array, width, height)
+    function decodeMapArray(array, width, height)
     {
         var decodedArray = [];
         var row = [];
@@ -110,15 +113,14 @@
             for(var bitIndex = 31; bitIndex >= 0; bitIndex--)
             {
                 if((array[longIndex] & (1 << bitIndex)) !== 0)
-                    row.push("O");
+                    row.push(1);
                 else
-                    row.push(" ");
+                    row.push(0);
 
                 if(row.length === width)
                 {
                     decodedArray.push(row);
                     row = [];
-
                     if(decodedArray.length === height)
                         return decodedArray;
                 }
@@ -138,8 +140,6 @@
         var bitIndex = 31 - (index % 32);
         return !((array[longIndex] & (1 << bitIndex)) !== 0);
     }
-
-
 
 </script>
 </html>

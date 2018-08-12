@@ -47,14 +47,12 @@ public class CollisionMask
     public void remove(Obstacle obstacle, float xPos, float yPos)
     {
         byte[][] mask = obstacle.getPreviousCollisionMask();
-        //if(mask != null)
-        //{
-            int xGrid = (int) xPos / maskCellSize;
-            int yGrid = (int) yPos / maskCellSize;
 
-            if(xGrid >= 0 && xGrid < width && yGrid >= 0 && yGrid < height)
-                fillMask(mask, (byte) 0, xGrid, yGrid);
-        //}
+        int xGrid = (int) xPos / maskCellSize;
+        int yGrid = (int) yPos / maskCellSize;
+
+        if(xGrid >= 0 && xGrid < width && yGrid >= 0 && yGrid < height)
+            fillMask(mask, (byte) 0, xGrid, yGrid);
     }
 
     private void fillMask(byte[][] mask, byte value, int xGridCenter, int yGridCenter)
@@ -105,5 +103,10 @@ public class CollisionMask
     public int getHeight()
     {
         return height;
+    }
+
+    public int getCellSize()
+    {
+        return maskCellSize;
     }
 }
