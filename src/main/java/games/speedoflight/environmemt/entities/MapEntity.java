@@ -1,6 +1,8 @@
 package games.speedoflight.environmemt.entities;
 
 import games.speedoflight.Camera;
+import games.speedoflight.environmemt.Map;
+import games.speedoflight.environmemt.MapUtil;
 import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 
@@ -14,6 +16,7 @@ public abstract class MapEntity
     protected float rotation;
     protected boolean collider;
 
+    protected String assetName;
     protected Image texture;
     protected Color baseColor;
     protected float textureScale;
@@ -30,6 +33,33 @@ public abstract class MapEntity
 
     public abstract void draw(Camera camera);
     public abstract boolean inside(float xPos, float yPos);
+
+    public String getSaveString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("assetName=").append(assetName);
+        sb.append(",xPos=").append(xPos);
+        sb.append(",yPos=").append(yPos);
+        sb.append(",rot=").append(rotation);
+        sb.append(",xScale=").append(xScale);
+        sb.append(",yScale=").append(yScale);
+        return sb.toString();
+    }
+
+    public void applySaveString(String saveString)
+    {
+        setX(MapUtil.getFloatValue(saveString, "xPos"));
+        setY(MapUtil.getFloatValue(saveString, "yPos"));
+        setScaleX(MapUtil.getFloatValue(saveString, "xScale"));
+        setScaleY(MapUtil.getFloatValue(saveString, "yScale"));
+        setRotation(MapUtil.getFloatValue(saveString, "rot"));
+        setAssetName(MapUtil.getStringValue(saveString, "assetName"));
+    }
+
+    public void setAssetName(String name)
+    {
+        this.assetName = name;
+    }
 
     public void setTexture(Image texture)
     {

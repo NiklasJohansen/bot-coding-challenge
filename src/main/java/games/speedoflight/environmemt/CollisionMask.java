@@ -5,6 +5,8 @@ import games.speedoflight.environmemt.entities.Obstacle;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
+import java.util.List;
+
 public class CollisionMask
 {
     private byte[][] collisionMask;
@@ -24,11 +26,17 @@ public class CollisionMask
     public void draw(Camera camera)
     {
         GraphicsContext gc = camera.getGraphicsContext();
-        gc.setFill(Color.rgb(0,0,0,0.5));
+        gc.setFill(Color.rgb(0,0,0,0.3));
         for(int y = 0; y < height; y++)
             for(int x = 0; x < width; x++)
                 if(collisionMask[y][x] > 0)
                     gc.fillRect(x * maskCellSize, y * maskCellSize, maskCellSize, maskCellSize);
+    }
+
+    public void updateAll(List<Obstacle> obstacles)
+    {
+        this.collisionMask = new byte[height][width];
+        obstacles.forEach(this::apply);
     }
 
     public void apply(Obstacle obstacle)

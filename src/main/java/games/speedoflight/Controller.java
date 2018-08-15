@@ -3,7 +3,7 @@ package games.speedoflight;
 import core.server.GameServer;
 import games.speedoflight.environmemt.Map;
 import games.speedoflight.environmemt.MapEditor;
-import games.speedoflight.environmemt.MapLoader;
+import games.speedoflight.environmemt.MapUtil;
 import games.speedoflight.environmemt.entities.Obstacle;
 import games.speedoflight.environmemt.entities.SpawnPoint;
 import javafx.animation.AnimationTimer;
@@ -24,12 +24,11 @@ import java.util.List;
 
 public class Controller
 {
+    private GameState gameState;
     private enum GameState
     {
-        LOBBY, ROUND_STARTED, ROUND_OVER, MAP_EDITOR;
+        LOBBY, ROUND_STARTED, ROUND_OVER, MAP_EDITOR
     }
-
-    private GameState gameState;
 
     private final int ROUND_BEGIN_COUNTDOWN = 10;
 
@@ -41,19 +40,13 @@ public class Controller
     private GameServer<LightPlayer> server;
     private ArrayList<Bullet> bullets;
     private MapEditor mapEditor;
-    private GameData gameData;
-
 
     private float animationCounter;
-
     private int countDown = 10;
     private long countDownTimer;
-
     private int fps;
     private int fpsCounter;
     private long fpsTimer;
-
-    public static boolean enable = false;
 
     @FXML
     public void initialize()
@@ -62,13 +55,17 @@ public class Controller
         openServer();
         startGameLoop();
 
-        this.map = MapLoader.load("none");
+        String defaultMap = Controller.class.getResource("/speedoflight/map/default.SLS").getPath();
+        this.map = MapUtil.load(defaultMap);
+        this.mapEditor = new MapEditor();
+        this.mapEditor.loadAssets(defaultMap.replace("/default.SLS", ""));
+
         this.camera = new Camera(canvas, map.getCenterX(), map.getCenterY());
         this.camera.setTarget(map.getCenterX(), map.getCenterY());
-        this.bullets = new ArrayList<>();
         this.countDown = ROUND_BEGIN_COUNTDOWN;
         this.gameState = GameState.LOBBY;
-        this.mapEditor = new MapEditor();
+
+        this.bullets = new ArrayList<>();
     }
 
     public void closeRequest()
@@ -124,7 +121,7 @@ public class Controller
 
     private GameData createGameData(boolean addMapData)
     {
-        gameData = new GameData();
+        GameData gameData = new GameData();
 
         if(map.isUpdated() || addMapData)
             gameData.addMapData(map);
@@ -330,12 +327,12 @@ public class Controller
         Collections.shuffle(server.getPlayers());
         for(LightPlayer player: server.getPlayers())
         {
-            player.setAlive();
             SpawnPoint point = map.getNextSpawnPoint();
             player.setX(point.getX());
             player.setY(point.getY());
             player.setXLast(point.getX());
             player.setYLast(point.getY());
+            player.setAlive();
         }
     }
 
@@ -344,13 +341,22 @@ public class Controller
         Platform.runLater(() ->
         {
             canvas.setOnScroll(event ->
-                    mapEditor.handleScrollEvent(event));
+            {
+                if(gameState == GameState.MAP_EDITOR)
+                    mapEditor.handleScrollEvent(event);
+            });
 
             canvas.setOnMouseDragged(event ->
-                    mapEditor.handleMouseMoveEvents(event));
+            {
+                if(gameState == GameState.MAP_EDITOR)
+                    mapEditor.handleMouseMoveEvents(event);
+            });
 
             canvas.setOnMouseMoved(event ->
-                    mapEditor.handleMouseMoveEvents(event));
+            {
+                if(gameState == GameState.MAP_EDITOR)
+                    mapEditor.handleMouseMoveEvents(event);
+            });
 
             canvas.setOnMousePressed(event ->
             {
@@ -370,6 +376,8 @@ public class Controller
                 {
                     case MAP_EDITOR:
                         mapEditor.handleKeyEvents(event, true);
+                        if(event.getCode() == KeyCode.ESCAPE)
+                            gameState = GameState.LOBBY;
                         break;
 
                     case LOBBY:
@@ -402,14 +410,10 @@ public class Controller
             });
 
             anchorPane.getScene().widthProperty().addListener((o, oldValue, newValue) ->
-            {
-                canvas.setWidth(newValue.doubleValue());
-            });
+                    canvas.setWidth(newValue.doubleValue()));
 
             anchorPane.getScene().heightProperty().addListener((o, oldValue, newValue) ->
-            {
-                canvas.setHeight(newValue.doubleValue());
-            });
+                    canvas.setHeight(newValue.doubleValue()));
         });
     }
 }

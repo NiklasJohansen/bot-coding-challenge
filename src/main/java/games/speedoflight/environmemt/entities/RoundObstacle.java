@@ -1,6 +1,7 @@
 package games.speedoflight.environmemt.entities;
 
 import games.speedoflight.*;
+import games.speedoflight.environmemt.MapUtil;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
@@ -38,14 +39,32 @@ public class RoundObstacle extends Obstacle
 
             double width = (radius + radius) * textureScale;
             double height = (radius + radius) * textureScale;
-            gc.drawImage(texture, xPos - width/2, yPos - height/2, width, height);
-            gc.setEffect(null);
+
+            gc.save();
+            gc.translate(xPos, yPos);
+            gc.rotate(Math.toDegrees(rotation));
+            gc.translate(-(xPos+width/2), -(yPos+height/2));
+            gc.drawImage(texture, xPos, yPos, width, height);
+            gc.restore();
         }
         else
         {
             gc.setFill(Color.WHITESMOKE);
             gc.fillOval(xPos - radius, yPos - radius, 2 * radius, 2 * radius);
         }
+    }
+
+    @Override
+    public String getSaveString()
+    {
+        return super.getSaveString() + ",radius=" + radius;
+    }
+
+    @Override
+    public void applySaveString(String saveString)
+    {
+        this.radius = MapUtil.getFloatValue(saveString, "radius");
+        super.applySaveString(saveString);
     }
 
     @Override

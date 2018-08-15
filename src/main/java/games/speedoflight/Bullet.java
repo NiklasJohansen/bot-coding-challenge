@@ -63,15 +63,6 @@ public class Bullet
         //gc.setStroke(Color.color(1,1,0.8, life / 100.0f));
         gc.setStroke(gradient);
 
-//        if(framesAlive > 0)
-//        {
-//            gc.strokeLine(xPosLast, yPosLast, xPos, yPos);
-//            if(framesAlive < 2)
-//                gc.strokeLine(spawner.getX(), spawner.getY(), xPosLast, yPosLast);
-//            else
-//                gc.strokeLine(xPosLastLast, yPosLastLast, xPosLast, yPosLast);
-//        }
-
         if(framesAlive > 0)
         {
             gc.beginPath();

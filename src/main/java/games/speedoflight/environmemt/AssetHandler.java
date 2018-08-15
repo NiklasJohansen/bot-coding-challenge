@@ -7,7 +7,9 @@ import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class AssetHandler
 {
@@ -29,29 +31,26 @@ public class AssetHandler
         this.width = 100;
         this.height = 600;
         this.assets = new ArrayList<>();
-        load();
     }
 
-    private void load()
+    public void loadDefault()
     {
-        File folder = new File(getClass().getResource(RESOURCE_PATH).getPath());
-        File[] files = folder.listFiles();
-        for(File f : files)
-        {
-            if(f.isFile())
-            {
-                boolean exists = false;
-                for(Asset a : assets)
-                {
-                    if(a.name == f.getName())
-                    {
-                        exists = true;
-                        break;
-                    }
-                }
+        load(new File(getClass().getResource(RESOURCE_PATH).getPath()));
+    }
 
-                if(!exists)
-                    assets.add(new Asset(f));
+    public void load(File folder)
+    {
+        assets.clear();
+        File[] files = folder.listFiles();
+        if(files != null && files.length > 0)
+        {
+            for(File f : files)
+            {
+                if(f.isFile())
+                {
+                    if(f.getName().endsWith("png"))
+                        assets.add(new Asset(f));
+                }
             }
         }
     }
@@ -104,6 +103,11 @@ public class AssetHandler
         return selectedAsset;
     }
 
+    public List<Asset> getAssets()
+    {
+        return assets;
+    }
+
     public class Asset
     {
         private float xPos;
@@ -118,59 +122,31 @@ public class AssetHandler
         private Asset(File file)
         {
             String fileName = file.getName();
-            System.out.println("File: " + fileName);
-            this.name = fileName.split("\\.")[0];
+            this.name = fileName.substring(0, fileName.lastIndexOf("."));
             if(name.indexOf("]") > 1)
                 name = name.split("]")[1];
             System.out.println(name);
-            TextureLoader.addTexture(name, RESOURCE_PATH + "/" + fileName);
+
+            TextureLoader.addTexture(name, file.toURI().toString());
             this.texture = TextureLoader.getTexture(this.name);
-            this.type = "";
             this.textureScale = 1.0f;
-            parseParamters(fileName);
+            this.type = "";
+            parseParameters(fileName);
         }
 
-        private void parseParamters(String fileName)
+        private void parseParameters(String fileName)
         {
             if(fileName.startsWith("[") && fileName.contains("]"))
             {
-                String parameterString = fileName.substring(1).split("\\]")[0];
-                if(parameterString != null && parameterString.length() > 0)
-                {
-                    parameterString = parameterString.replaceAll("\\s+","").toLowerCase().trim();
+                String parameterString = fileName.substring(1).split("]")[0];
 
-                    String[] parameters;
-                    if(parameterString.contains(","))
-                    {
-                        parameters = parameterString.split(",");
-                    }
-                    else parameters = new String[]{parameterString};
+                float textureScale = MapUtil.getFloatValue(parameterString, "texturescale");
+                if (textureScale != -1)
+                    this.textureScale = textureScale;
 
-                    for(String parameter : parameters)
-                    {
-                        String[] elements = parameter.split("=");
-                        if(elements.length == 2)
-                        {
-                            String key = elements[0];
-                            String value = elements[1];
-
-                            switch(key)
-                            {
-                                case "type":
-                                    this.type = value;
-                                    break;
-
-                                case "texturescale":
-                                    this.textureScale = Float.parseFloat(value);
-                                    break;
-
-                                default:
-                                    System.err.println("Parameter: " + key + " not recognized in " + fileName);
-                                    break;
-                            }
-                        }
-                    }
-                }
+                String type = MapUtil.getStringValue(parameterString, "type");
+                if (type != null)
+                    this.type = type;
             }
         }
 
@@ -192,6 +168,11 @@ public class AssetHandler
         public float getTextureScale()
         {
             return textureScale;
+        }
+
+        public String getName()
+        {
+            return name;
         }
 
     }

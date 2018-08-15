@@ -7,7 +7,9 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
+import javafx.stage.FileChooser;
 
+import java.io.File;
 import java.util.List;
 
 public class MapEditor
@@ -16,7 +18,9 @@ public class MapEditor
     private final float ZOOM_SPEED = 0.08f;
     private final float ROTATION_SPEED = (float)Math.PI / 200;
 
-    private boolean up, down, left, right, shift, delete, leftMouse, rightMouse, qKey, eKey, ctrl;
+    private boolean up, down, left, right, shift, delete, leftMouse,
+            qKey, eKey, rKey, mKey, oKey, cKey, ctrl, pgUp, pgDown;
+
     private float xMouse, yMouse;
     private float xMousePinned, yMousePinned;
     private float scroll;
@@ -26,6 +30,8 @@ public class MapEditor
     private float selectedEntityScaleY;
     private float selectedOffsetX;
     private float selectedOffsetY;
+
+    private String mapFolderPath;
 
     private AssetHandler assetHandler;
     private AssetHandler.Asset selectedAsset;
@@ -44,7 +50,9 @@ public class MapEditor
         {
             if(!leftMouse)
             {
-                map.addMapEntity(createNewEntity(selectedAsset, xWorld, yWorld));
+                MapEntity entity = MapUtil.createNewEntity(selectedAsset, xWorld, yWorld);
+                entity.setTextureScale(selectedAsset.getTextureScale());
+                map.addMapEntity(entity);
                 selectedAsset = null;
             }
             return map;
@@ -65,10 +73,10 @@ public class MapEditor
 
         if(selectedEntity == null && leftMouse)
         {
-            List<Obstacle> obstacles = map.getObstacles();
-            for(int i = obstacles.size() - 1; i >= 0; i--)
+            List<MapEntity> entities = map.getEntities();
+            for(int i = entities.size() - 1; i >= 0; i--)
             {
-                MapEntity entity = obstacles.get(i);
+                MapEntity entity = entities.get(i);
                 if(entity.inside(xWorld, yWorld))
                 {
                     selectedEntity = entity;
@@ -91,12 +99,16 @@ public class MapEditor
                     float yScale = selectedEntityScaleY + (yMouse - yMousePinned) / 100;
                     selectedEntity.setScaleX((float) Math.max(0.1, xScale));
                     selectedEntity.setScaleY((float) Math.max(0.1, yScale));
+                    selectedOffsetX = selectedEntity.getX() - xWorld;
+                    selectedOffsetY = selectedEntity.getY() - yWorld;
                 }
             }
             else
             {
                 selectedEntity.setX(xWorld + selectedOffsetX);
                 selectedEntity.setY(yWorld + selectedOffsetY);
+                selectedEntityScaleX = selectedEntity.getScaleX();
+                selectedEntityScaleY = selectedEntity.getScaleY();
             }
 
             float rot = selectedEntity.getRotation();
@@ -116,44 +128,86 @@ public class MapEditor
                 selectedEntity.setRotation(rot);
             }
 
+            if(pgUp || pgDown)
+            {
+                List<MapEntity> entities = map.getEntities();
+                int index = entities.indexOf(selectedEntity) + (pgUp ? 1 : 0) + (pgDown ? -1 : 0);
+                if(index >= 0 && index < entities.size())
+                {
+                    entities.remove(selectedEntity);
+                    entities.add(index, selectedEntity);
+                }
+                pgUp = pgDown = false;
+            }
+
             if(delete)
             {
-                map.getObstacles().remove(selectedEntity);
+                map.removeMapEntity(selectedEntity);
                 selectedEntity.setX(-1000);
+                selectedEntity = null;
+                delete = false;
             }
 
             if(!leftMouse)
                 selectedEntity = null;
         }
 
+        if(ctrl && down)
+        {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("Speed of Light Save", "*.SLS"));
+            File file = fileChooser.showSaveDialog(null);
+            if(file != null)
+            {
+                MapUtil.save(map, file.toString());
+                mapFolderPath = file.toString().replace("\\" + file.getName(), "");
+                loadAssets(mapFolderPath);
+            }
+
+            ctrl = down = false;
+        }
+
+        if(ctrl && oKey)
+        {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("Speed of Light Save", "*.SLS"));
+            File file = fileChooser.showOpenDialog(null);
+            if(file != null)
+            {
+                map = MapUtil.load(file.toString());
+                mapFolderPath = file.toString().replace("\\" + file.getName(), "");
+                loadAssets(mapFolderPath);
+            }
+            ctrl = oKey = false;
+        }
+
+        if(ctrl && rKey)
+        {
+            if(mapFolderPath != null)
+                loadAssets(mapFolderPath);
+            ctrl = rKey = false;
+        }
+
+        if(cKey)
+        {
+            map.toggleShowCollision();
+            cKey = false;
+        }
+
+        if(mKey)
+        {
+            map.toggleShowMapArea();
+            mKey = false;
+        }
+
         return map;
     }
 
-    private MapEntity createNewEntity(AssetHandler.Asset asset, float xPos, float yPos)
+    public void loadAssets(String folderPath)
     {
-        MapEntity entity;
-        Image texture = asset.getTexture();
-        float texScale = asset.getTextureScale();
-        float width = (float)texture.getWidth();
-        float height = (float)texture.getHeight();
-        String entityType = asset.getType();
-
-        if(entityType.contains("obstacle"))
-        {
-            if(entityType.contains("round"))
-                entity = new RoundObstacle(xPos, yPos, width/2/texScale);
-            else
-                entity = new RectObstacle(xPos, yPos, width, height);
-        }
-        else if(entityType.contains("spawnpoint"))
-        {
-            entity = new SpawnPoint(xPos, yPos);
-        }
-        else entity = new Decoration(xPos, yPos, width, height);
-
-        entity.setTexture(texture);
-        entity.setTextureScale(selectedAsset.getTextureScale());
-        return entity;
+        assetHandler.load(new File(folderPath));
     }
 
     public void draw(Camera camera)
@@ -167,7 +221,6 @@ public class MapEditor
         camera.setZoom(zoom);
         camera.setTargetZoom(zoom);
 
-        assetHandler.draw(camera);
         if(selectedAsset != null)
         {
             Image texture = selectedAsset.getTexture();
@@ -180,16 +233,16 @@ public class MapEditor
                     texWidth,
                     texHeight);
         }
+
+        assetHandler.draw(camera);
     }
 
     public void handleKeyEvents(KeyEvent event, boolean pressed)
     {
         ctrl = event.isControlDown();
         if(ctrl && leftMouse)
-        {
             setPinnedMouse();
-        }
-        else selectedEntity = null;
+
         switch(event.getCode())
         {
             case W: up = pressed; break;
@@ -198,6 +251,12 @@ public class MapEditor
             case D: right = pressed; break;
             case Q: qKey = pressed; break;
             case E: eKey = pressed; break;
+            case O: oKey = pressed; break;
+            case R: rKey = pressed; break;
+            case C: cKey = pressed; break;
+            case M: mKey = pressed; break;
+            case PAGE_UP: pgUp = pressed; break;
+            case PAGE_DOWN: pgDown = pressed; break;
             case SHIFT: shift = pressed; break;
             case DELETE: delete = pressed; break;
         }
@@ -211,11 +270,6 @@ public class MapEditor
                 leftMouse = pressed;
                 if(ctrl && pressed)
                     setPinnedMouse();
-                break;
-
-            case SECONDARY:
-                rightMouse = pressed;
-                setPinnedMouse();
                 break;
         }
     }

@@ -28,6 +28,17 @@ public class SpawnPoint extends MapEntity
         GraphicsContext gc = camera.getGraphicsContext();
         gc.setFill(Color.rgb(255,255,255,0.5));
         gc.fillOval(xPos - 10, yPos - 10, 20, 20);
+
+        double width = texture.getWidth() * xScale;
+        double height = texture.getHeight() * yScale;
+
+        gc.save();
+        gc.translate(xPos, yPos);
+        gc.rotate(Math.toDegrees(rotation));
+        gc.translate(-(xPos+width/2), -(yPos+height/2));
+        gc.drawImage(texture, xPos, yPos, width, height);
+        gc.restore();
+
     }
 
     @Override

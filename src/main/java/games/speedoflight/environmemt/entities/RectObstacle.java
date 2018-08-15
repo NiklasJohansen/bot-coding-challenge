@@ -1,6 +1,7 @@
 package games.speedoflight.environmemt.entities;
 
 import games.speedoflight.*;
+import games.speedoflight.environmemt.MapUtil;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
@@ -271,5 +272,17 @@ public class RectObstacle extends Obstacle
         onMoveEvent.accept(new MoveEvent(xPos, yPos, xPos, yPos));
     }
 
+    @Override
+    public String getSaveString()
+    {
+        return super.getSaveString() + ",w=" + width + ",h=" + height;
+    }
 
+    @Override
+    public void applySaveString(String saveString)
+    {
+        this.width = MapUtil.getFloatValue(saveString, "w");
+        this.height = MapUtil.getFloatValue(saveString, "h");
+        super.applySaveString(saveString);
+    }
 }
