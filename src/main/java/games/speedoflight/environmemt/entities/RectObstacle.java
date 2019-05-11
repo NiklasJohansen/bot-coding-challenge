@@ -196,7 +196,7 @@ public class RectObstacle extends Obstacle
         }
 
         if(Util.isPointInsidePolygon(bullet.getX(), bullet.getY(), xVertices, yVertices))
-            bullet.setDead();
+            bullet.setInactive();
     }
 
     @Override

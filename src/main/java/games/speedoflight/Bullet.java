@@ -59,8 +59,6 @@ public class Bullet
     public void draw(Camera camera)
     {
         GraphicsContext gc = camera.getGraphicsContext();
-        //gc.setStroke(Color.color(1,1,0.8, life / 100.0f));
-        //gc.setStroke(Color.color(1,1,0.8, life / 100.0f));
         gc.setStroke(gradient);
 
         if(framesAlive > 0)
@@ -87,12 +85,12 @@ public class Bullet
         return spawner;
     }
 
-    public void setDead()
+    public void setInactive()
     {
         life = 0;
     }
 
-    public boolean isDead()
+    public boolean isActive()
     {
         return life <= 0;
     }

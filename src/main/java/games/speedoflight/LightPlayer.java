@@ -65,34 +65,36 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
                     rotation, 70));
         }
 
-        for (int i = 0; i < bullets.size(); i++)
+        for(Bullet bullet : bullets)
         {
-            Bullet b = bullets.get(i);
-
-            if(b.getOwner() == this || b.isDead())
+            if(bullet.getOwner() == this || bullet.isActive())
                 continue;
 
             float[] intersection = Util.lineCircleIntersection(xPos, yPos, radius,
-                    b.getXLast(), b.getYLast(), b.getX(), b.getY());
+                    bullet.getXLast(), bullet.getYLast(), bullet.getX(), bullet.getY());
 
             if (intersection != null)
             {
-                float prevLife = life;
-                float damage = b.getSpeed() * b.getLife() * 0.5f;
+                float prevLife = this.life;
+                float damage = bullet.getSpeed() * bullet.getLife() * 0.5f;
                 damage = 10;
-                if(!b.getOwner().isDead())
-                    life -= damage;
 
-                b.setX(intersection[0]);
-                b.setY(intersection[1]);
-                b.setXLast(intersection[0]);
-                b.setYLast(intersection[1]);
-                b.setDead();
+                if(!bullet.getOwner().isDead())
+                    this.life -= damage;
 
-                if(life <= 0 && prevLife > 0)
+                float xInter = intersection[0];
+                float yInter = intersection[1];
+
+                bullet.setX(xInter);
+                bullet.setY(yInter);
+                bullet.setXLast(xInter);
+                bullet.setYLast(yInter);
+                bullet.setInactive();
+
+                if(this.life <= 0 && prevLife > 0)
                 {
-                    b.getOwner().increaseKills();
-                    deaths++;
+                    bullet.getOwner().increaseKills();
+                    this.deaths++;
                 }
             }
         }
@@ -117,18 +119,6 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
             {
                 xVel += Math.cos(rotation + Math.PI) * ACCELERATION;
                 yVel += Math.sin(rotation + Math.PI) * ACCELERATION;
-            }
-
-            if(response.left)
-            {
-                xVel -= Math.cos(rotation + Math.PI * 0.5) * ACCELERATION;
-                yVel -= Math.sin(rotation + Math.PI * 0.5) * ACCELERATION;
-            }
-
-            if(response.right)
-            {
-                xVel += Math.cos(rotation + Math.PI * 0.5) * ACCELERATION;
-                yVel += Math.sin(rotation + Math.PI * 0.5) * ACCELERATION;
             }
 
             if(response.rotLeft)
@@ -309,8 +299,6 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
         public String username;
         public boolean up;
         public boolean down;
-        public boolean left;
-        public boolean right;
         public boolean rotLeft;
         public boolean rotRight;
         public boolean fire;

@@ -14,7 +14,7 @@ public class Main extends Application
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/speedoflight/userinterface.fxml"));
         AnchorPane root = loader.load();
 
-        primaryStage.setTitle("speedoflight");
+        primaryStage.setTitle("Speed Of Light");
         primaryStage.setScene(new Scene(root, root.getPrefWidth(), root.getPrefHeight()));
         primaryStage.setOnCloseRequest(event -> ((Controller)loader.getController()).closeRequest());
         primaryStage.show();

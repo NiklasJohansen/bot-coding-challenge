@@ -133,7 +133,7 @@ public class RoundObstacle extends Obstacle
         }
 
         if(Util.isPointInsideCircle(bullet.getX(), bullet.getY(), xPos, yPos, radius))
-            bullet.setDead();
+            bullet.setInactive();
     }
 
     @Override

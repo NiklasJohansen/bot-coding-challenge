@@ -80,5 +80,4 @@ public class GameData
             this.cellSize = mask.getCellSize();
         }
     }
-
 }

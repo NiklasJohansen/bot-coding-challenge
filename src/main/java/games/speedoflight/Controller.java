@@ -186,7 +186,7 @@ public class Controller
             for (Obstacle o : map.getObstacles())
                 o.resolveBulletCollision(b);
 
-            if (b.isDead()) {
+            if (b.isActive()) {
                 bullets.remove(b);
                 i--;
             }

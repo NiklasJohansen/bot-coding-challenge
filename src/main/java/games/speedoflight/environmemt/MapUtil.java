@@ -39,12 +39,14 @@ public class MapUtil
                 map = new Map(width, height);
             }
 
-            AssetHandler assetHandler = new AssetHandler();
             if(path.contains("\\"))
                 path = path.substring(0, path.lastIndexOf("\\"));
             else if(path.contains("/"))
                 path = path.substring(0, path.lastIndexOf("/"));
+
             File folder = new File(path);
+
+            AssetHandler assetHandler = new AssetHandler();
             assetHandler.load(folder);
 
             String line;
@@ -128,5 +130,4 @@ public class MapUtil
         }
         return null;
     }
-
 }

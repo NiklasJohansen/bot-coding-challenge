@@ -85,7 +85,10 @@ public class Camera
             return;
         }
 
-        float left = 0, right = 0, bottom = 0, top = 0;
+        float left = 0;
+        float right = 0;
+        float bottom = 0;
+        float top = 0;
         float xCenterPlayers = 0;
         float yCenterPlayers = 0;
         int nPlayers = 0;
