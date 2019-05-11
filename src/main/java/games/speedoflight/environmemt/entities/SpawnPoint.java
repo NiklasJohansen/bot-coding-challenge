@@ -7,9 +7,12 @@ import javafx.scene.paint.Color;
 
 public class SpawnPoint extends MapEntity
 {
+    private float radius;
+
     public SpawnPoint(float xPos, float yPos)
     {
         super(xPos, yPos, false);
+        this.radius = 100;
     }
 
     public float getX()
@@ -20,6 +23,11 @@ public class SpawnPoint extends MapEntity
     public float getY()
     {
         return yPos;
+    }
+
+    public float getRadius()
+    {
+        return radius;
     }
 
     @Override

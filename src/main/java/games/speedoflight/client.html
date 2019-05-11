@@ -7,7 +7,8 @@
 <h1>The Speed of Light</h1>
 <label id="label"></label>
 <input id="username" placeholder="username" onkeyup="updateUsername()" />
-
+<br/>
+<input id="slider" type="range" min="10" max="100" value="40" onchange="updateRotSensitivity()" />
 <table>
     <tbody>
         <tr>
@@ -44,10 +45,11 @@
         down: false,
         rotLeft: false,
         rotRight: false,
-        fire: false
+        fire: false,
+        rotSens: Math.PI / 40
     }
 
-    var connection = new WebSocket('ws://10.0.0.123:55501');
+    var connection = new WebSocket('ws://127.0.0.1:55501');
 
     document.onkeyup = function checkKeyUp(e) {
 
@@ -82,6 +84,12 @@
         send(input)
     }
 
+    function updateRotSensitivity()
+    {
+        input.rotSens = Math.PI / document.getElementById('slider').value;
+        send(input)
+    }
+
     function send(obj) {
         connection.send(JSON.stringify(obj))
     }
@@ -95,7 +103,7 @@
             console.log(gameData);
             if(gameData.map !== undefined) {
                 map = gameData.map;
-                map.array = decodeMapArray(gameData.map.mapBitSequence, gameData.map.width, gameData.map.height);
+                map.array = decodeBitSequence(gameData.map.mapBitSequence, gameData.map.width, gameData.map.height);
                 console.log(map);
             }
         }
@@ -104,21 +112,17 @@
         }
     }
 
-    function decodeMapArray(array, width, height)
-    {
+    function decodeBitSequence(array, width, height) {
         var decodedArray = [];
         var row = [];
-        for(var longIndex = 0; longIndex < array.length; longIndex++)
-        {
-            for(var bitIndex = 31; bitIndex >= 0; bitIndex--)
-            {
+        for(var longIndex = 0; longIndex < array.length; longIndex++) {
+            for(var bitIndex = 31; bitIndex >= 0; bitIndex--) {
                 if((array[longIndex] & (1 << bitIndex)) !== 0)
                     row.push(1);
                 else
                     row.push(0);
 
-                if(row.length === width)
-                {
+                if(row.length === width) {
                     decodedArray.push(row);
                     row = [];
                     if(decodedArray.length === height)
@@ -130,8 +134,7 @@
         return decodedArray;
     }
 
-    function isWalkable(array, width, height, xPos, yPos)
-    {
+    function isWalkable(array, width, height, xPos, yPos) {
         if(xPos < 0 || xPos >= width || yPos < 0 || yPos >= height)
             return false;
 

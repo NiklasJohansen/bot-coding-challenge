@@ -12,7 +12,6 @@ import java.util.List;
 public class LightPlayer extends Player<LightPlayer.ClientResponse> implements Comparable
 {
     private final float ACCELERATION = 0.4f;
-    private final float ROT_ACCELERATION = 0.08f;
     private final float FRICTION = 0.97f;
 
     private float radius;
@@ -42,6 +41,7 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
         this.life = 100;
         this.mass = (float)(Math.PI * Math.pow(radius, 2));
         this.unknownName = "UNKNOWN_" + unknownNameCounter++;
+        this.rotation = (float)(Math.PI + Math.PI / 2);
     }
 
     public void update(List<Bullet> bullets)
@@ -78,7 +78,10 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
             if (intersection != null)
             {
                 float prevLife = life;
-                life -= b.getSpeed() * b.getLife() * 0.5f;
+                float damage = b.getSpeed() * b.getLife() * 0.5f;
+                damage = 10;
+                if(!b.getOwner().isDead())
+                    life -= damage;
 
                 b.setX(intersection[0]);
                 b.setY(intersection[1]);
@@ -129,10 +132,10 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
             }
 
             if(response.rotLeft)
-                rotation -= ROT_ACCELERATION;
+                rotation -= response.rotSens;
 
             if(response.rotRight)
-                rotation += ROT_ACCELERATION;
+                rotation += response.rotSens;
         }
 
         if(rotation > 2 * Math.PI)
@@ -160,6 +163,12 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
         gc.fillOval(xPos - radius, yPos - radius, radius * 2, radius * 2);
         gc.setStroke(Color.BLACK);
         gc.strokeLine(xPos, yPos, xPos + Math.cos(rotation) * radius, yPos + Math.sin(rotation) * radius);
+        gc.save();
+        gc.translate(xPos, yPos);
+        gc.rotate(Math.toDegrees(rotation));
+        gc.translate(-(xPos+radius/2), -(yPos+radius/2));
+        gc.fillRect(xPos+5, yPos+5, 33, 10);
+        gc.restore();
         gc.setEffect(null);
 
         gc.setFill(Color.color(1, 1, 1, opacity));
@@ -215,12 +224,12 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
         this.xPos = x;
     }
 
-    public void setYLast(float y)
+    public void setLastY(float y)
     {
         this.yPosLast = y;
     }
 
-    public void setXLast(float x)
+    public void setLastX(float x)
     {
         this.xPosLast = x;
     }
@@ -245,9 +254,29 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
         return yPos;
     }
 
+    public float getLastX()
+    {
+        return xPosLast;
+    }
+
+    public float getLastY()
+    {
+        return yPosLast;
+    }
+
     public float getRadius()
     {
         return radius;
+    }
+
+    public float getLife()
+    {
+        return life;
+    }
+
+    public float getRotation()
+    {
+        return rotation;
     }
 
     public String getName()
@@ -285,5 +314,6 @@ public class LightPlayer extends Player<LightPlayer.ClientResponse> implements C
         public boolean rotLeft;
         public boolean rotRight;
         public boolean fire;
+        public float rotSens;
     }
 }

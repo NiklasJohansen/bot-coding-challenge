@@ -95,14 +95,14 @@ public class Controller
             SpawnPoint point = map.getNextSpawnPoint();
             player.setX(point.getX());
             player.setY(point.getY());
-            player.setXLast(point.getX());
-            player.setYLast(point.getY());
+            player.setLastX(point.getX());
+            player.setLastY(point.getY());
             GameData gameData = createGameData(true);
             gameData.setThisPlayer(player);
             player.send(gameData);
         });
 
-        this.server.setGameLoop(1, () ->
+        this.server.setGameLoop(10, () ->
         {
             if(map != null)
             {
@@ -111,6 +111,7 @@ public class Controller
                 for(LightPlayer player : server.getPlayers())
                 {
                     gameData.setThisPlayer(player);
+                    gameData.addPlayers(server.getPlayers());
                     player.send(gameData);
                 }
             }
@@ -126,7 +127,6 @@ public class Controller
         if(map.isUpdated() || addMapData)
             gameData.addMapData(map);
 
-        gameData.addPlayers(server.getPlayers());
         return gameData;
     }
 
@@ -158,7 +158,7 @@ public class Controller
                 {
                     gameState = GameState.ROUND_STARTED;
                     countDown = ROUND_BEGIN_COUNTDOWN;
-                    server.allowNewConnections(false);
+                    server.allowNewConnections(true); // false
                     respawn();
                 }
                 else if(System.currentTimeMillis() > countDownTimer + 1000)
@@ -327,12 +327,30 @@ public class Controller
         Collections.shuffle(server.getPlayers());
         for(LightPlayer player: server.getPlayers())
         {
-            SpawnPoint point = map.getNextSpawnPoint();
-            player.setX(point.getX());
-            player.setY(point.getY());
-            player.setXLast(point.getX());
-            player.setYLast(point.getY());
-            player.setAlive();
+            while(true)
+            {
+                SpawnPoint point = map.getNextSpawnPoint();
+                player.setX(point.getX() - 10 +  (float)Math.random() * 20);
+                player.setY(point.getY() - 10 +  (float)Math.random() * 20);
+                player.setLastX(point.getX());
+                player.setLastY(point.getY());
+                player.setAlive();
+
+                boolean spawnOk = true;
+                for(LightPlayer otherPlayer: server.getPlayers())
+                {
+                    if(player != otherPlayer)
+                    {
+                        float xDelta = player.getX() - otherPlayer.getX();
+                        float yDelta = player.getY() - otherPlayer.getY();
+                        float dist = (float) Math.sqrt(xDelta * xDelta + yDelta * yDelta);
+                        if(dist < point.getRadius())
+                            spawnOk = false;
+                    }
+                }
+                if(spawnOk)
+                    break;
+            }
         }
     }
 
@@ -384,7 +402,7 @@ public class Controller
                         if(event.getCode() == KeyCode.SPACE && server.getPlayers().size() > 0)
                         {
                             gameState = GameState.ROUND_STARTED;
-                            server.allowNewConnections(false);
+                            server.allowNewConnections(true); // false
                             respawn();
                         }
                         else if(event.getCode() == KeyCode.E)

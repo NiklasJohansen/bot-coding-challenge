@@ -8,18 +8,24 @@ import java.util.List;
 public class GameData
 {
     public MapData map;
-    public PlayerData[] players;
+    public PlayerData[] otherPlayers;
     public PlayerData thisPlayer;
 
     public void addPlayers(List<LightPlayer> playerList)
     {
-        if(players == null || players.length != playerList.size())
-            players = new PlayerData[playerList.size()];
+        int nPlayers = playerList.size() - (thisPlayer != null ? 1 : 0);
 
-        for(int i = 0; i < playerList.size(); i++)
+        if(otherPlayers == null || otherPlayers.length != nPlayers)
+            otherPlayers = new PlayerData[nPlayers];
+
+        for(int i = 0, j = 0; i < playerList.size(); i++)
         {
             LightPlayer player = playerList.get(i);
-            players[i] = new PlayerData(player);
+
+            if(thisPlayer != null && player == thisPlayer.player)
+                continue;
+
+            otherPlayers[j++] = new PlayerData(player);
         }
     }
 
@@ -35,15 +41,26 @@ public class GameData
 
     private class PlayerData
     {
-        private float x;
-        private float y;
+        private transient LightPlayer player;
+
+        private float xPos;
+        private float yPos;
+        private float xVel;
+        private float yVel;
+        private float life;
+        private float rotation;
         private boolean alive;
 
         private PlayerData(LightPlayer player)
         {
-            this.x = player.getX();
-            this.y = player.getY();
+            this.player = player;
+            this.xPos = player.getX();
+            this.yPos = player.getY();
+            this.xVel = xPos - player.getLastX();
+            this.yVel = yPos - player.getLastY();
             this.alive = !player.isDead();
+            this.life = player.getLife();
+            this.rotation = player.getRotation();
         }
     }
 
